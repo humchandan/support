@@ -6,11 +6,12 @@ import { ethers } from 'ethers';
 import { useRouter } from 'next/navigation';
 import WealthTab from './WealthTab';
 import PaymentsTab from './PaymentsTab';
+import ProfileTab from './ProfileTab';
 
 export default function DashboardView() {
   const { userAddress, provider, userProfile, disconnectWallet } = useWeb3();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('wealth'); // 'wealth' | 'payments'
+  const [activeTab, setActiveTab] = useState('wealth'); // 'wealth' | 'payments' | 'profile'
   const [ethBalance, setEthBalance] = useState(0);
 
   // Poll user wallet balance
@@ -89,7 +90,7 @@ export default function DashboardView() {
         </section>
 
         {/* Segmented Tab Link Navigation */}
-        <nav className="revolut-tabs">
+        <nav className="revolut-tabs" style={{ maxWidth: '600px' }}>
           <button 
             className={`tab-link ${activeTab === 'wealth' ? 'active' : ''}`} 
             onClick={() => setActiveTab('wealth')}
@@ -104,13 +105,22 @@ export default function DashboardView() {
             <i className="fa-solid fa-arrow-right-arrow-left"></i>
             <span>Transfers &amp; Payments</span>
           </button>
+          <button 
+            className={`tab-link ${activeTab === 'profile' ? 'active' : ''}`} 
+            onClick={() => setActiveTab('profile')}
+          >
+            <i className="fa-solid fa-user"></i>
+            <span>Profile Settings</span>
+          </button>
         </nav>
 
         {/* Tab Contents */}
         {activeTab === 'wealth' ? (
           <WealthTab />
-        ) : (
+        ) : activeTab === 'payments' ? (
           <PaymentsTab />
+        ) : (
+          <ProfileTab />
         )}
 
       </main>

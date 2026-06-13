@@ -66,6 +66,48 @@ export default function WealthTab() {
   const [mlmViewMode, setMlmViewMode] = useState('table'); // 'table' | 'tree'
   const [withdrawalType, setWithdrawalType] = useState('metamask'); // 'metamask' | 'utility'
 
+  const [dbTiers, setDbTiers] = useState(MLM_TIERS);
+  const [dbLevels, setDbLevels] = useState(MLM_LEVELS);
+
+  const hasUnlockedLevel = (tier, levelNum) => {
+    if (!tier || !tier.unlockedLevels) return false;
+    if (Array.isArray(tier.unlockedLevels)) {
+      return tier.unlockedLevels.includes(levelNum);
+    }
+    return levelNum <= Number(tier.unlockedLevels);
+  };
+
+  const getUnlockedLevelsCount = (tier) => {
+    if (!tier || !tier.unlockedLevels) return 0;
+    if (Array.isArray(tier.unlockedLevels)) {
+      return tier.unlockedLevels.length;
+    }
+    return Number(tier.unlockedLevels) || 0;
+  };
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      if (!jwtToken) return;
+      try {
+        const res = await fetch('/api/admin/config', {
+          headers: { 'Authorization': `Bearer ${jwtToken}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.tiers && data.tiers.length > 0) {
+            setDbTiers(data.tiers);
+          }
+          if (data.levels && data.levels.length > 0) {
+            setDbLevels(data.levels);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch MLM configuration dynamically:", err);
+      }
+    };
+    fetchConfig();
+  }, [jwtToken]);
+
   // Input states
   const [purchaseAmount, setPurchaseAmount] = useState('');
   const [activePreset, setActivePreset] = useState(null);
@@ -347,17 +389,19 @@ export default function WealthTab() {
 
   // Helper to determine simulated rank
   const getSimRank = (investment, directs, volume) => {
-    for (let i = MLM_TIERS.length - 1; i >= 0; i--) {
-      const tier = MLM_TIERS[i];
+    for (let i = dbTiers.length - 1; i >= 0; i--) {
+      const tier = dbTiers[i];
+      const minSelf = Number(tier.minSelfInvestment);
+      const minTeam = Number(tier.minTeamVolume);
       if (
-        investment >= tier.minSelfInvestment &&
+        investment >= minSelf &&
         directs >= tier.minDirects &&
-        volume >= tier.minTeamVolume
+        volume >= minTeam
       ) {
         return tier;
       }
     }
-    return MLM_TIERS[0];
+    return dbTiers[0];
   };
 
   // Draw simulation center canvas projection chart
@@ -404,9 +448,9 @@ export default function WealthTab() {
     const monthlyYield = simStaking * 0.0833;
     const simRank = getSimRank(simStaking, simDirects, simTeamVolume);
     let matchingPct = 0;
-    MLM_LEVELS.forEach(lvl => {
-      if (simRank.unlockedLevels.includes(lvl.level)) {
-        matchingPct += lvl.bonus;
+    dbLevels.forEach(lvl => {
+      if (hasUnlockedLevel(simRank, lvl.level)) {
+        matchingPct += Number(lvl.bonus);
       }
     });
     const monthlyMatching = simDownlineYield * (matchingPct / 100.0);
@@ -575,9 +619,9 @@ export default function WealthTab() {
   // Projections Center calculations
   const simRank = getSimRank(simStaking, simDirects, simTeamVolume);
   let simMatchingPct = 0;
-  MLM_LEVELS.forEach(lvl => {
-    if (simRank.unlockedLevels.includes(lvl.level)) {
-      simMatchingPct += lvl.bonus;
+  dbLevels.forEach(lvl => {
+    if (hasUnlockedLevel(simRank, lvl.level)) {
+      simMatchingPct += Number(lvl.bonus);
     }
   });
   const simMonthlyYield = simStaking * 0.0833;
@@ -738,12 +782,12 @@ export default function WealthTab() {
                       </tr>
                     </thead>
                     <tbody>
-                      {MLM_LEVELS.map((lvl, idx) => {
-                        const isUnlocked = realRank.unlockedLevels.includes(lvl.level);
+                      {dbLevels.map((lvl, idx) => {
+                        const isUnlocked = hasUnlockedLevel(realRank, lvl.level);
                         return (
                           <tr key={idx}>
                             <td><strong>Level {lvl.level}</strong></td>
-                            <td>{lvl.bonus.toFixed(2)}%</td>
+                            <td>{Number(lvl.bonus).toFixed(2)}%</td>
                             <td>{lvl.requiredRank}</td>
                             <td>
                               {isUnlocked ? (
@@ -843,7 +887,7 @@ export default function WealthTab() {
                             if (realDirects > 0) {
                               const child1X = startX;
                               
-                              if (realRank.unlockedLevels.includes(2)) {
+                              if (hasUnlockedLevel(realRank, 2)) {
                                 const level2Y = 250;
                                 nodes.push(
                                   <g key="lvl2">
@@ -856,7 +900,7 @@ export default function WealthTab() {
                                   </g>
                                 );
 
-                                if (realRank.unlockedLevels.includes(4)) {
+                                if (hasUnlockedLevel(realRank, 4)) {
                                   const level3Y = 350;
                                   nodes.push(
                                     <g key="lvl4">
@@ -1252,7 +1296,7 @@ export default function WealthTab() {
               </div>
               <div className="mlm-stat-box">
                 <div className="mlm-stat-label">Unlock Ratio</div>
-                <div className="mlm-stat-val" style={{ color: 'var(--success-color)', fontSize: '1rem' }}>{simRank.unlockedLevels.length} / 10 Levels</div>
+                <div className="mlm-stat-val" style={{ color: 'var(--success-color)', fontSize: '1rem' }}>{getUnlockedLevelsCount(simRank)} / 10 Levels</div>
               </div>
               <div className="mlm-stat-box">
                 <div className="mlm-stat-label">Months to Cap</div>

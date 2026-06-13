@@ -19,6 +19,18 @@ model User {
   rank           String   @default("Default")
   createdAt      DateTime @default(now())
 
+  // New Profile Details
+  address                 String?
+  city                    String?
+  state                   String?
+  zip                     String?
+  aadhaarNo               String?
+  panNo                   String?
+  aadharFrontUrl          String?
+  aadharBackUrl           String?
+  panCardUrl              String?
+  profileUpdatesRemaining Int      @default(3)
+
   @@index([walletAddress])
   @@index([sponsorAddress])
 }
@@ -57,3 +69,60 @@ model ClaimHistory {
 
   @@index([userAddress])
 }
+
+model MlmTier {
+  id                 Int      @id @default(autoincrement())
+  name               String   @unique
+  minSelfInvestment  Decimal  @db.Decimal(20, 8)
+  minDirects         Int
+  minTeamVolume      Decimal  @db.Decimal(20, 8)
+  unlockedLevels     Int
+}
+
+model MlmLevel {
+  id           Int      @id @default(autoincrement())
+  level        Int      @unique
+  bonus        Decimal  @db.Decimal(5, 2)
+  requiredRank String
+}
+
+model UtilityCategory {
+  id       Int              @id @default(autoincrement())
+  name     String           @unique
+  icon     String           // FontAwesome icon class (e.g. "fa-mobile-screen")
+  isActive Boolean          @default(true)
+  services UtilityService[]
+}
+
+model UtilityService {
+  id          Int             @id @default(autoincrement())
+  categoryId  Int
+  name        String
+  description String
+  minAmount   Decimal         @db.Decimal(20, 8)
+  maxAmount   Decimal         @db.Decimal(20, 8)
+  isActive    Boolean         @default(true)
+  customFields String?        @db.Text
+  category    UtilityCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  requests    UtilityRequest[]
+}
+
+model UtilityRequest {
+  id           Int            @id @default(autoincrement())
+  userAddress  String
+  serviceId    Int
+  serviceName  String
+  categoryName String
+  details      String         @db.Text // JSON string containing user inputs
+  amount       Decimal        @db.Decimal(20, 8)
+  status       String         @default("PENDING") // PENDING, APPROVED, REJECTED
+  adminNotes   String?
+  receiptUrl   String?
+  timestamp    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  service      UtilityService @relation(fields: [serviceId], references: [id])
+
+  @@index([userAddress])
+  @@index([status])
+}
+

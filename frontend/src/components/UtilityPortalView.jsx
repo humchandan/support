@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useWeb3 } from '../hooks/useWeb3';
 import { useRouter } from 'next/navigation';
 import { ethers } from 'ethers';
+import AdminView from './AdminView';
 
 const getFriendlyErrorMessage = (err) => {
   if (!err) return "Transaction failed.";
@@ -42,21 +43,30 @@ export default function UtilityPortalView() {
   const { userAddress, jwtToken, userProfile, provider, signer, disconnectWallet, loadProfile } = useWeb3();
   const router = useRouter();
 
+  const ADMIN_ADDRESSES = [
+    '0x963ebdf2e1f8db8707d05fc75bfeffba1b5bac17'
+  ];
+  const isAdminAddress = userAddress && ADMIN_ADDRESSES.includes(userAddress.toLowerCase());
+
+  // Navigation tab state
+  const [activePortalTab, setActivePortalTab] = useState('portal'); // 'portal' | 'admin'
+
   // Ledger state
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [proxyAddress, setProxyAddress] = useState(null);
   const [custodianBalance, setCustodianBalance] = useState(0);
   
+  // Catalog state
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedService, setSelectedService] = useState(null);
+  const [userRequests, setUserRequests] = useState([]);
+  const [sideTab, setSideTab] = useState('ledger'); // 'ledger' | 'requests'
+
   // Spend form states
-  const [selectedService, setSelectedService] = useState('mobile'); // 'mobile' | 'electricity' | 'internet' | 'voucher'
-  const [phoneNo, setPhoneNo] = useState('');
-  const [operator, setOperator] = useState('Aries Mobile');
-  const [billId, setBillId] = useState('');
-  const [billProvider, setBillProvider] = useState('Aries Power');
-  const [internetAcc, setInternetAcc] = useState('');
-  const [internetIsp, setInternetIsp] = useState('Aries Fiber');
-  const [voucherBrand, setVoucherBrand] = useState('Amazon Gift Card');
+  const [dynamicAnswers, setDynamicAnswers] = useState({});
+  const [uploadingField, setUploadingField] = useState({});
   
   const [spendAmount, setSpendAmount] = useState('');
   const [loading, setLoading] = useState(false);
@@ -107,9 +117,65 @@ export default function UtilityPortalView() {
     }
   };
 
+  const loadCatalogData = async () => {
+    if (!jwtToken) return;
+    try {
+      const res = await fetch('/api/admin/utility/categories', {
+        headers: { 'Authorization': `Bearer ${jwtToken}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.categories) {
+        setCategories(data.categories);
+        if (data.categories.length > 0) {
+          setSelectedCategory(prev => {
+            const found = data.categories.find(c => c.id === prev?.id);
+            return found || data.categories[0];
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load dynamic catalog categories:", err);
+    }
+  };
+
+  const loadUserRequests = async () => {
+    if (!jwtToken) return;
+    try {
+      const res = await fetch('/api/user/utility/requests', {
+        headers: { 'Authorization': `Bearer ${jwtToken}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.requests) {
+        setUserRequests(data.requests);
+      }
+    } catch (err) {
+      console.error("Failed to load user utility requests:", err);
+    }
+  };
+
+  // Sync selectedService if selectedCategory changes
+  useEffect(() => {
+    if (selectedCategory) {
+      if (selectedCategory.services && selectedCategory.services.length > 0) {
+        setSelectedService(prev => {
+          const found = selectedCategory.services.find(s => s.id === prev?.id);
+          return found || selectedCategory.services[0];
+        });
+      } else {
+        setSelectedService(null);
+      }
+    }
+  }, [selectedCategory]);
+
   useEffect(() => {
     loadLedgerAndProxy();
-    const interval = setInterval(loadLedgerAndProxy, 30000); // 30s — avoid RPC spam
+    loadCatalogData();
+    loadUserRequests();
+    const interval = setInterval(() => {
+      loadLedgerAndProxy();
+      loadCatalogData();
+      loadUserRequests();
+    }, 30000); // 30s — avoid RPC spam
     return () => clearInterval(interval);
   }, [jwtToken, userAddress, userProfile, provider]);
 
@@ -206,24 +272,39 @@ export default function UtilityPortalView() {
       showToast("Insufficient utility credit balance!", true);
       return;
     }
-
-    let description = '';
-    if (selectedService === 'mobile') {
-      if (!phoneNo) { showToast("Enter mobile number!", true); return; }
-      description = `Mobile Top-up (${operator}) to ${phoneNo}`;
-    } else if (selectedService === 'electricity') {
-      if (!billId) { showToast("Enter account ID!", true); return; }
-      description = `Utility Bill (${billProvider}) ID: ${billId}`;
-    } else if (selectedService === 'internet') {
-      if (!internetAcc) { showToast("Enter internet username/ID!", true); return; }
-      description = `Broadband payment (${internetIsp}) for ${internetAcc}`;
-    } else if (selectedService === 'voucher') {
-      description = `E-Voucher (${voucherBrand}) purchase`;
+    if (!selectedService) {
+      showToast("Please select a utility service option!", true);
+      return;
     }
+    const minSvc = Number(selectedService.minAmount);
+    const maxSvc = Number(selectedService.maxAmount);
+    if (amount < minSvc || amount > maxSvc) {
+      showToast(`Spend amount must be between ${minSvc} and ${maxSvc} ARES!`, true);
+      return;
+    }
+
+    let customFieldsArray = [];
+    try {
+      customFieldsArray = selectedService.customFields ? JSON.parse(selectedService.customFields) : [];
+    } catch (err) {
+      customFieldsArray = [];
+    }
+    if (!Array.isArray(customFieldsArray)) customFieldsArray = [];
+
+    // Validate fields
+    for (const f of customFieldsArray) {
+      const val = dynamicAnswers[f.name];
+      if (!val) {
+        showToast(`Please fill out/upload: ${f.label}`, true);
+        return;
+      }
+    }
+
+    const details = dynamicAnswers;
 
     try {
       setLoading(true);
-      showToast("Processing utility payment transaction...", false);
+      showToast("Submitting recharge utility request...", false);
 
       const res = await fetch(`/api/ledger/spend`, {
         method: 'POST',
@@ -231,23 +312,22 @@ export default function UtilityPortalView() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${jwtToken}`
         },
-        body: JSON.stringify({ amount, description })
+        body: JSON.stringify({ amount, serviceId: selectedService.id, details })
       });
       const data = await res.json();
 
       if (data.success) {
-        showToast(`Utility payment successful! ${amount} ARES deducted.`, false);
+        showToast(`Utility request submitted! Req #${data.request.id} is pending approval.`, false);
         setSpendAmount('');
-        setPhoneNo('');
-        setBillId('');
-        setInternetAcc('');
+        setDynamicAnswers({});
         loadLedgerAndProxy();
+        loadUserRequests();
       } else {
-        showToast(data.error || "Payment failed.", true);
+        showToast(data.error || "Request failed.", true);
       }
     } catch (err) {
       console.error("Spend transaction failed:", err);
-      showToast("Payment execution failed.", true);
+      showToast("Request execution failed.", true);
     } finally {
       setLoading(false);
     }
@@ -340,10 +420,19 @@ export default function UtilityPortalView() {
                 <i className="fa-solid fa-sitemap mr-1.5"></i> MLM Dashboard
               </button>
               <button 
-                className="text-white bg-[#252836] rounded-full px-4 py-1.5 transition-colors cursor-default"
+                onClick={() => setActivePortalTab('portal')}
+                className={`px-4 py-1.5 rounded-full transition-colors ${activePortalTab === 'portal' ? 'text-white bg-[#252836] cursor-default' : 'text-zinc-400 hover:text-white'}`}
               >
                 <i className="fa-solid fa-wallet mr-1.5"></i> Utility Portal
               </button>
+              {isAdminAddress && (
+                <button 
+                  onClick={() => setActivePortalTab('admin')}
+                  className={`px-4 py-1.5 rounded-full transition-colors ${activePortalTab === 'admin' ? 'text-white bg-[#252836] cursor-default' : 'text-zinc-400 hover:text-white'}`}
+                >
+                  <i className="fa-solid fa-user-shield mr-1.5"></i> Admin Panel
+                </button>
+              )}
             </nav>
           </div>
 
@@ -360,354 +449,500 @@ export default function UtilityPortalView() {
       </header>
 
       {/* Main Container */}
-      <main className="revolut-container py-10">
-        
-        {/* Balance Hero Section */}
-        <section className="balance-hero mb-10 mt-2">
-          <div className="balance-label">Available Utility Balance</div>
-          <div className="balance-amount text-blue-500">
-            {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
-            <span className="currency text-zinc-500">ARES</span>
-          </div>
-          <div className="wallet-address-sub">Proxy wallet: {proxyAddress || 'None Generated'}</div>
-        </section>
-
-        {/* 2-Column Dashboard Grid */}
-        <div className="grid-layout">
+      {activePortalTab === 'admin' ? (
+        <AdminView />
+      ) : (
+        <main className="revolut-container py-10">
           
-          {/* Left Column: Spending Center & Proxy Management */}
-          <div className="main-column">
+          {/* Balance Hero Section */}
+          <section className="balance-hero mb-10 mt-2">
+            <div className="balance-label">Available Utility Balance</div>
+            <div className="balance-amount text-blue-500">
+              {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
+              <span className="currency text-zinc-500">ARES</span>
+            </div>
+            <div className="wallet-address-sub">Proxy wallet: {proxyAddress || 'None Generated'}</div>
+          </section>
+
+          {/* 2-Column Dashboard Grid */}
+          <div className="grid-layout">
             
-            {/* Consumer Utility Spending Center */}
-            <div className="revolut-card">
-              <h3 className="card-title">Utility Spending Center</h3>
-              <p className="card-desc">Simulate spending your available off-chain ledger credit balance directly on bills, mobile recharges, and shopping vouchers.</p>
+            {/* Left Column: Spending Center & Proxy Management */}
+            <div className="main-column">
               
-              {/* Category Segmented Tabs */}
-              <div className="grid grid-cols-4 gap-2 bg-[#16171e] p-1.5 rounded-xl mb-6">
-                <button 
-                  type="button"
-                  onClick={() => setSelectedService('mobile')}
-                  className={`py-2 px-1 text-center rounded-lg text-xs font-semibold flex flex-col items-center gap-1.5 transition-colors ${selectedService === 'mobile' ? 'bg-[#252836] text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-                >
-                  <i className="fa-solid fa-mobile-screen"></i>
-                  <span className="hidden sm:inline">Mobile</span>
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setSelectedService('electricity')}
-                  className={`py-2 px-1 text-center rounded-lg text-xs font-semibold flex flex-col items-center gap-1.5 transition-colors ${selectedService === 'electricity' ? 'bg-[#252836] text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-                >
-                  <i className="fa-solid fa-lightbulb"></i>
-                  <span className="hidden sm:inline">Bills</span>
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setSelectedService('internet')}
-                  className={`py-2 px-1 text-center rounded-lg text-xs font-semibold flex flex-col items-center gap-1.5 transition-colors ${selectedService === 'internet' ? 'bg-[#252836] text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-                >
-                  <i className="fa-solid fa-wifi"></i>
-                  <span className="hidden sm:inline">Broadband</span>
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setSelectedService('voucher')}
-                  className={`py-2 px-1 text-center rounded-lg text-xs font-semibold flex flex-col items-center gap-1.5 transition-colors ${selectedService === 'voucher' ? 'bg-[#252836] text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-                >
-                  <i className="fa-solid fa-gift"></i>
-                  <span className="hidden sm:inline">Vouchers</span>
-                </button>
+              {/* Consumer Utility Spending Center */}
+              <div className="revolut-card">
+                <h3 className="card-title">Utility Spending Center</h3>
+                <p className="card-desc">Spend your available off-chain ledger credit balance on bills, mobile recharges, or shopping vouchers dynamically.</p>
+                
+                {/* Category Segmented Tabs */}
+                {categories.length === 0 ? (
+                  <div className="text-center text-xs text-zinc-650 py-8">
+                    No utility payment categories configured yet.
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-[#16171e] p-1.5 rounded-xl mb-6">
+                      {categories.map(cat => (
+                        <button 
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCategory(cat);
+                            const defaultSvc = cat.services && cat.services.length > 0 ? cat.services[0] : null;
+                            setSelectedService(defaultSvc);
+                            // Clear values and set defaults
+                            setPhoneNo('');
+                            setBillId('');
+                            setInternetAcc('');
+                            setRecipientEmail('');
+                            setCustomDetails('');
+                            setOperator(defaultSvc?.name || '');
+                            setBillProvider(defaultSvc?.name || '');
+                            setInternetIsp(defaultSvc?.name || '');
+                            setVoucherBrand(defaultSvc?.name || '');
+                          }}
+                          className={`py-2 px-1 text-center rounded-lg text-xs font-semibold flex flex-col items-center gap-1.5 transition-colors ${selectedCategory?.id === cat.id ? 'bg-[#252836] text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                          <i className={`fa-solid ${cat.icon || 'fa-tag'}`}></i>
+                          <span>{cat.name}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Service Selector (Only if Category has multiple services) */}
+                    {selectedCategory?.services && selectedCategory.services.length > 0 && (
+                      <div className="form-group mb-4">
+                        <label htmlFor="spend-service-select">Select Service Option</label>
+                        <select 
+                          id="spend-service-select"
+                          value={selectedService?.id || ''}
+                          onChange={(e) => {
+                            const svcId = parseInt(e.target.value);
+                            const svc = selectedCategory?.services?.find(s => s.id === svcId);
+                            setSelectedService(svc);
+                            // Reset values on service change
+                            setOperator(svc?.name || '');
+                            setBillProvider(svc?.name || '');
+                            setInternetIsp(svc?.name || '');
+                            setVoucherBrand(svc?.name || '');
+                          }}
+                          className="w-full bg-[#1b1c24] border border-zinc-800 focus:border-blue-500 focus:outline-none rounded-lg px-4 py-3 text-sm text-white"
+                        >
+                          {selectedCategory.services.map(s => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Limit helper card */}
+                    {selectedService && (
+                      <div className="bg-[#16171e] p-3 rounded-lg border border-zinc-850 text-[11px] text-zinc-400 space-y-1.5 mb-4">
+                        <div className="flex justify-between">
+                          <span>Description:</span>
+                          <span className="text-zinc-300 text-right">{selectedService.description}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Allowed Limits:</span>
+                          <span className="font-mono text-blue-400">{Number(selectedService.minAmount)} - {Number(selectedService.maxAmount)} ARES</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Spend execution Form */}
+                    <form onSubmit={handleSpend} className="space-y-4 text-left">
+                      {(() => {
+                        let customFieldsArray = [];
+                        try {
+                          customFieldsArray = selectedService?.customFields ? JSON.parse(selectedService.customFields) : [];
+                        } catch (e) {
+                          customFieldsArray = [];
+                        }
+                        if (!Array.isArray(customFieldsArray)) customFieldsArray = [];
+
+                        if (customFieldsArray.length === 0) {
+                          return (
+                            <div className="bg-[#16171e] p-4 rounded-xl text-xs text-zinc-500 mb-4 border border-zinc-900 text-center">
+                              No additional input details required for this utility service. Enter payment amount below.
+                            </div>
+                          );
+                        }
+
+                        return customFieldsArray.map(f => {
+                          if (f.type === 'file') {
+                            const fileUrl = dynamicAnswers[f.name] || '';
+                            return (
+                              <div className="form-group mb-4 animate-fade-in" key={f.name}>
+                                <label>{f.label}</label>
+                                {fileUrl && (
+                                  <div className="text-xs text-green-500 mb-2 flex items-center gap-1.5 font-semibold">
+                                    <i className="fa-solid fa-circle-check text-green-500"></i>
+                                    <span>Uploaded:</span>
+                                    <a href={fileUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline monospace truncate max-w-[200px]">
+                                      {fileUrl.substring(fileUrl.lastIndexOf('/') + 1)}
+                                    </a>
+                                  </div>
+                                )}
+                                <label className="btn-secondary cursor-pointer block text-center !py-2.5 !text-xs font-semibold">
+                                  {uploadingField[f.name] ? <i className="fa-solid fa-spinner fa-spin mr-1"></i> : <i className="fa-solid fa-upload mr-1"></i>}
+                                  {fileUrl ? 'Replace Uploaded Copy' : `Upload ${f.label}`}
+                                  <input
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                      const file = e.target.files[0];
+                                      if (!file) return;
+                                      const formData = new FormData();
+                                      formData.append('file', file);
+                                      setUploadingField(prev => ({ ...prev, [f.name]: true }));
+                                      try {
+                                        const res = await fetch('/api/user/upload', {
+                                          method: 'POST',
+                                          headers: {
+                                            'Authorization': `Bearer ${jwtToken}`
+                                          },
+                                          body: formData
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok && data.url) {
+                                          setDynamicAnswers(prev => ({ ...prev, [f.name]: data.url }));
+                                          showToast("Document uploaded successfully!", false);
+                                        } else {
+                                          showToast(data.error || "Upload failed", true);
+                                        }
+                                      } catch (err) {
+                                        showToast("Upload failed.", true);
+                                      } finally {
+                                        setUploadingField(prev => ({ ...prev, [f.name]: false }));
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="form-group mb-4" key={f.name}>
+                              <label htmlFor={`field-${f.name}`}>{f.label}</label>
+                              <input 
+                                type={f.type === 'number' ? 'number' : 'text'}
+                                id={`field-${f.name}`}
+                                placeholder={f.placeholder || `Enter ${f.label}`}
+                                value={dynamicAnswers[f.name] || ''}
+                                onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [f.name]: e.target.value }))}
+                              />
+                            </div>
+                          );
+                        });
+                      })()}
+
+                      <div className="form-group">
+                        <label htmlFor="spend-amount">Payment Amount</label>
+                        <div className="input-container">
+                          <input 
+                            type="number" 
+                            id="spend-amount"
+                            placeholder="Amount in ARES" 
+                            min="1" 
+                            step="1"
+                            value={spendAmount}
+                            onChange={(e) => setSpendAmount(e.target.value)}
+                          />
+                          <span className="input-suffix">ARES</span>
+                        </div>
+                      </div>
+
+                      <button type="submit" className="btn-primary" disabled={loading || !selectedService}>
+                        {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Submit Spending Request'}
+                      </button>
+                    </form>
+                  </>
+                )}
               </div>
 
-              {/* Spend execution Form */}
-              <form onSubmit={handleSpend} className="space-y-4 text-left">
-                {selectedService === 'mobile' && (
-                  <>
-                    <div className="form-group mb-0">
-                      <label htmlFor="spend-mobile-op">Mobile Operator</label>
-                      <select 
-                        id="spend-mobile-op"
-                        value={operator}
-                        onChange={(e) => setOperator(e.target.value)}
-                        className="w-full bg-[#1b1c24] border border-zinc-800 focus:border-blue-500 focus:outline-none rounded-lg px-4 py-3 text-sm text-white"
-                      >
-                        <option value="Aries Mobile">Aries Mobile LTE</option>
-                        <option value="Aries Connect">Aries Connect 5G</option>
-                        <option value="Aries Link">Aries Link Pre-Paid</option>
-                      </select>
-                    </div>
-                    <div className="form-group mb-0">
-                      <label htmlFor="spend-mobile-phone">Phone Number</label>
-                      <input 
-                        type="text" 
-                        id="spend-mobile-phone"
-                        placeholder="e.g. +1 (555) 0199"
-                        value={phoneNo}
-                        onChange={(e) => setPhoneNo(e.target.value)}
-                      />
-                    </div>
-                  </>
-                )}
+              {/* Utility Proxy Wallet Details */}
+              <div className="revolut-card">
+                <h3 className="card-title">Account Gateway Wallet</h3>
+                <p className="card-desc">Funds sent to this unique EIP-1167 proxy wallet are automatically routed to the custodial treasury and credited to your available utility balance.</p>
 
-                {selectedService === 'electricity' && (
-                  <>
-                    <div className="form-group mb-0">
-                      <label htmlFor="spend-bill-prov">Bill Utility Provider</label>
-                      <select 
-                        id="spend-bill-prov"
-                        value={billProvider}
-                        onChange={(e) => setBillProvider(e.target.value)}
-                        className="w-full bg-[#1b1c24] border border-zinc-800 focus:border-blue-500 focus:outline-none rounded-lg px-4 py-3 text-sm text-white"
-                      >
-                        <option value="Aries Power">Aries Power &amp; Electricity</option>
-                        <option value="Aries Gas">Aries Gas Corporation</option>
-                        <option value="Aries Water">Aries Water Supply</option>
-                      </select>
-                    </div>
-                    <div className="form-group mb-0">
-                      <label htmlFor="spend-bill-id">Customer Account ID</label>
-                      <input 
-                        type="text" 
-                        id="spend-bill-id"
-                        placeholder="e.g. ELEC-992011"
-                        value={billId}
-                        onChange={(e) => setBillId(e.target.value)}
-                      />
-                    </div>
-                  </>
-                )}
-
-                {selectedService === 'internet' && (
-                  <>
-                    <div className="form-group mb-0">
-                      <label htmlFor="spend-internet-isp">Broadband ISP Provider</label>
-                      <select 
-                        id="spend-internet-isp"
-                        value={internetIsp}
-                        onChange={(e) => setInternetIsp(e.target.value)}
-                        className="w-full bg-[#1b1c24] border border-zinc-800 focus:border-blue-500 focus:outline-none rounded-lg px-4 py-3 text-sm text-white"
-                      >
-                        <option value="Aries Fiber">Aries Fiber optic</option>
-                        <option value="Aries Broadband">Aries Satellite Broadband</option>
-                      </select>
-                    </div>
-                    <div className="form-group mb-0">
-                      <label htmlFor="spend-internet-acc">Internet User account ID</label>
-                      <input 
-                        type="text" 
-                        id="spend-internet-acc"
-                        placeholder="e.g. user@ariesfiber"
-                        value={internetAcc}
-                        onChange={(e) => setInternetAcc(e.target.value)}
-                      />
-                    </div>
-                  </>
-                )}
-
-                {selectedService === 'voucher' && (
-                  <div className="form-group mb-0">
-                    <label htmlFor="spend-voucher-brand">Select Shopping Brand E-Voucher</label>
-                    <select 
-                      id="spend-voucher-brand"
-                      value={voucherBrand}
-                      onChange={(e) => setVoucherBrand(e.target.value)}
-                      className="w-full bg-[#1b1c24] border border-zinc-800 focus:border-blue-500 focus:outline-none rounded-lg px-4 py-3 text-sm text-white"
-                    >
-                      <option value="Amazon Gift Card">Amazon Gift Card (Universal)</option>
-                      <option value="Google Play Voucher">Google Play Store Card</option>
-                      <option value="Apple Vouchers">Apple Gift &amp; Services Card</option>
-                      <option value="Decentralized Vouchers">Web3 Node Services Voucher</option>
-                    </select>
+                {!proxyAddress ? (
+                  <div className="proxy-state-box">
+                    <i className="fa-solid fa-wallet text-4xl text-zinc-800 mb-4"></i>
+                    <h4>No Utility Wallet Found</h4>
+                    <p className="text-zinc-500 text-sm mb-6 max-w-xs">Deploy your unique low-gas proxy wallet copy to enable direct deposits.</p>
+                    <button className="btn-primary" onClick={handleCreateProxy} disabled={loading}>
+                      {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Create Utility Address'}
+                    </button>
                   </div>
-                )}
-
-                <div className="form-group">
-                  <label htmlFor="spend-amount">Payment Amount</label>
-                  <div className="input-container">
-                    <input 
-                      type="number" 
-                      id="spend-amount"
-                      placeholder="Amount in ARES" 
-                      min="1" 
-                      step="1"
-                      value={spendAmount}
-                      onChange={(e) => setSpendAmount(e.target.value)}
-                    />
-                    <span className="input-suffix">ARES</span>
-                  </div>
-                </div>
-
-                <button type="submit" className="btn-primary" disabled={loading}>
-                  {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Pay Bills / Buy Voucher'}
-                </button>
-              </form>
-            </div>
-
-            {/* Utility Wallet Details */}
-            <div className="revolut-card">
-              <h3 className="card-title">Account Gateway Wallet</h3>
-              <p className="card-desc">Funds sent to this unique EIP-1167 proxy wallet are automatically routed to the custodial treasury and credited to your available utility balance.</p>
-
-              {!proxyAddress ? (
-                <div className="proxy-state-box">
-                  <i className="fa-solid fa-wallet text-4xl text-zinc-800 mb-4"></i>
-                  <h4>No Utility Wallet Found</h4>
-                  <p className="text-zinc-500 text-sm mb-6 max-w-xs">Deploy your unique low-gas proxy wallet copy to enable direct deposits.</p>
-                  <button className="btn-primary" onClick={handleCreateProxy} disabled={loading}>
-                    {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Create Utility Address'}
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-6 text-left">
-                  <div className="form-group mb-0">
-                    <label>Your Proxy Deposit Address</label>
-                    <div className="flex gap-2">
-                      <input type="text" value={proxyAddress} readOnly className="font-mono text-sm" />
-                      <button className="btn-secondary !w-12 !p-0" title="Copy Address" onClick={() => copyToClipboard(proxyAddress)}>
-                        <i className="fa-solid fa-copy"></i>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="form-group mb-0">
-                    <label htmlFor="deposit-amount">Simulate Deposit (Test auto-sweep forwarding)</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="number" 
-                        id="deposit-amount"
-                        placeholder="Amount in ARES" 
-                        min="1"
-                        step="1"
-                        value={depositAmount}
-                        onChange={(e) => setDepositAmount(e.target.value)}
-                      />
-                      <button className="btn-primary !w-32" onClick={handleDepositProxy} disabled={loading}>
-                        {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Deposit'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Flow Diagram */}
-                  <div className="transfer-visualizer-card !mt-2">
-                    <h4 className="text-xs uppercase text-zinc-500 tracking-wider mb-4 font-semibold">Auto-Routing Flow</h4>
-                    <div className="visualizer-nodes">
-                      <div className="v-node">
-                        <span className="node-label">Your Proxy</span>
-                        <span className="node-address" title={proxyAddress}>{formattedProxy}</span>
-                      </div>
-                      <div className="v-arrow">
-                        <i className="fa-solid fa-angles-right text-blue-500"></i>
-                      </div>
-                      <div className="v-node">
-                        <span className="node-label">Admin Custodial</span>
-                        <span className="node-address" title={CUSTODY_WALLET_ADDRESS}>{formattedCustody}</span>
+                ) : (
+                  <div className="space-y-6 text-left">
+                    <div className="form-group mb-0">
+                      <label>Your Proxy Deposit Address</label>
+                      <div className="flex gap-2">
+                        <input type="text" value={proxyAddress} readOnly className="font-mono text-sm" />
+                        <button className="btn-secondary !w-12 !p-0" title="Copy Address" onClick={() => copyToClipboard(proxyAddress)}>
+                          <i className="fa-solid fa-copy"></i>
+                        </button>
                       </div>
                     </div>
-                    <div className="v-caption">
-                      Custodial Wallet Balance: {custodianBalance.toFixed(2)} ARES
+
+                    <div className="form-group mb-0">
+                      <label htmlFor="deposit-amount">Simulate Deposit (Test auto-sweep forwarding)</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="number" 
+                          id="deposit-amount"
+                          placeholder="Amount in ARES" 
+                          min="1"
+                          step="1"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                        />
+                        <button className="btn-primary !w-32" onClick={handleDepositProxy} disabled={loading}>
+                          {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Deposit'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Flow Diagram */}
+                    <div className="transfer-visualizer-card !mt-2">
+                      <h4 className="text-xs uppercase text-zinc-500 tracking-wider mb-4 font-semibold">Auto-Routing Flow</h4>
+                      <div className="visualizer-nodes">
+                        <div className="v-node">
+                          <span className="node-label">Your Proxy</span>
+                          <span className="node-address" title={proxyAddress}>{formattedProxy}</span>
+                        </div>
+                        <div className="v-arrow">
+                          <i className="fa-solid fa-angles-right text-blue-500"></i>
+                        </div>
+                        <div className="v-node">
+                          <span className="node-label">Admin Custodial</span>
+                          <span className="node-address" title={CUSTODY_WALLET_ADDRESS}>{formattedCustody}</span>
+                        </div>
+                      </div>
+                      <div className="v-caption">
+                        Custodial Wallet Balance: {custodianBalance.toFixed(2)} ARES
+                      </div>
                     </div>
                   </div>
+                )}
+              </div>
+
+              {/* Send Utility Credit (Internal Transfer) */}
+              {proxyAddress && (
+                <div className="revolut-card" id="internal-transfer-card">
+                  <h3 className="card-title">Send Utility Credit (Internal)</h3>
+                  <p className="card-desc">Transfer available utility portal balance to another user's utility wallet instantly. A 5.0% fee is deducted. Transfers to unregistered external wallets are automatically rejected.</p>
+                  
+                  <form onSubmit={handleTransfer} className="space-y-4 text-left">
+                    <div className="form-group mb-0">
+                      <label htmlFor="transfer-recipient">Recipient Address (MetaMask or Proxy)</label>
+                      <input 
+                        type="text" 
+                        id="transfer-recipient" 
+                        placeholder="Enter 0x... address"
+                        value={recipient}
+                        onChange={(e) => setRecipient(e.target.value)}
+                        className="w-full bg-[#1b1c24] border border-zinc-800 focus:border-blue-500 focus:outline-none rounded-lg px-4 py-3 text-sm text-white"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="transfer-amount">Amount to Send</label>
+                      <div className="input-container">
+                        <input 
+                          type="number" 
+                          id="transfer-amount" 
+                          placeholder="Amount (ARES)" 
+                          min="1" 
+                          step="1"
+                          value={transferAmount}
+                          onChange={(e) => setTransferAmount(e.target.value)}
+                          className="w-full bg-[#1b1c24] border border-zinc-800 focus:border-blue-500 focus:outline-none rounded-lg px-4 py-3 text-sm text-white"
+                        />
+                        <span className="input-suffix">ARES</span>
+                      </div>
+                      {transferAmount && parseFloat(transferAmount) > 0 && (
+                        <small className="helper-text text-zinc-500 text-[11px] mt-1.5 block">
+                          Deducts 5% fee: {(parseFloat(transferAmount) * 0.05).toFixed(2)} ARES. Recipient receives: {(parseFloat(transferAmount) * 0.95).toFixed(2)} ARES.
+                        </small>
+                      )}
+                    </div>
+
+                    <button type="submit" className="btn-primary" disabled={loading}>
+                      {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Send Instantly'}
+                    </button>
+                  </form>
                 </div>
               )}
+
             </div>
 
-            {/* Send Utility Credit (Internal Transfer) */}
-            {proxyAddress && (
-              <div className="revolut-card" id="internal-transfer-card">
-                <h3 className="card-title">Send Utility Credit (Internal)</h3>
-                <p className="card-desc">Transfer available utility portal balance to another user's utility wallet instantly. A 5.0% fee is deducted. Transfers to unregistered external wallets are automatically rejected.</p>
+            {/* Right Column: Ledger Transaction History & Requests History logs */}
+            <div className="side-column">
+              <div className="revolut-card">
                 
-                <form onSubmit={handleTransfer} className="space-y-4 text-left">
-                  <div className="form-group mb-0">
-                    <label htmlFor="transfer-recipient">Recipient Address (MetaMask or Proxy)</label>
-                    <input 
-                      type="text" 
-                      id="transfer-recipient" 
-                      placeholder="Enter 0x... address"
-                      value={recipient}
-                      onChange={(e) => setRecipient(e.target.value)}
-                      className="w-full bg-[#1b1c24] border border-zinc-800 focus:border-blue-500 focus:outline-none rounded-lg px-4 py-3 text-sm text-white"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="transfer-amount">Amount to Send</label>
-                    <div className="input-container">
-                      <input 
-                        type="number" 
-                        id="transfer-amount" 
-                        placeholder="Amount (ARES)" 
-                        min="1" 
-                        step="1"
-                        value={transferAmount}
-                        onChange={(e) => setTransferAmount(e.target.value)}
-                        className="w-full bg-[#1b1c24] border border-zinc-800 focus:border-blue-500 focus:outline-none rounded-lg px-4 py-3 text-sm text-white"
-                      />
-                      <span className="input-suffix">ARES</span>
-                    </div>
-                    {transferAmount && parseFloat(transferAmount) > 0 && (
-                      <small className="helper-text text-zinc-500 text-[11px] mt-1.5 block">
-                        Deducts 5% fee: {(parseFloat(transferAmount) * 0.05).toFixed(2)} ARES. Recipient receives: {(parseFloat(transferAmount) * 0.95).toFixed(2)} ARES.
-                      </small>
-                    )}
-                  </div>
-
-                  <button type="submit" className="btn-primary" disabled={loading}>
-                    {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Send Instantly'}
+                {/* Tab Selector */}
+                <div className="flex border-b border-zinc-900 mb-6 pb-2 gap-4">
+                  <button 
+                    onClick={() => setSideTab('ledger')}
+                    className={`text-sm font-semibold pb-1.5 border-b-2 transition-all duration-200 ${sideTab === 'ledger' ? 'text-white border-blue-500' : 'text-zinc-500 border-transparent hover:text-zinc-300'}`}
+                  >
+                    <i className="fa-solid fa-list-ul mr-1.5"></i> Ledger
                   </button>
-                </form>
-              </div>
-            )}
+                  <button 
+                    onClick={() => setSideTab('requests')}
+                    className={`text-sm font-semibold pb-1.5 border-b-2 transition-all duration-200 ${sideTab === 'requests' ? 'text-white border-blue-500' : 'text-zinc-500 border-transparent hover:text-zinc-300'}`}
+                  >
+                    <i className="fa-solid fa-clock-rotate-left mr-1.5"></i> Requests
+                    {userRequests.filter(r => r.status === 'PENDING').length > 0 && (
+                      <span className="ml-1.5 bg-yellow-500/20 text-yellow-500 text-[9px] px-1.5 py-0.5 rounded-full font-bold border border-yellow-500/30">
+                        {userRequests.filter(r => r.status === 'PENDING').length}
+                      </span>
+                    )}
+                  </button>
+                </div>
 
-          </div>
-
-          {/* Right Column: Ledger Transaction History log */}
-          <div className="side-column">
-            <div className="revolut-card">
-              <h3 className="card-title">Transaction Ledger</h3>
-              <p className="card-desc">Full history of claims, deposits, internal transfers, and spend recharges for this wallet address.</p>
-              
-              <div className="tx-history-list text-left">
-                {transactions.length === 0 ? (
-                  <div className="tx-item-empty">No transactions logged yet.</div>
+                {sideTab === 'ledger' ? (
+                  <div>
+                    <p className="card-desc mb-4">Full ledger log of claims, deposits, internal transfers, and approved spend transactions.</p>
+                    <div className="tx-history-list text-left max-h-[500px] overflow-y-auto pr-1">
+                      {transactions.length === 0 ? (
+                        <div className="tx-item-empty">No ledger entries logged yet.</div>
+                      ) : (
+                        transactions.map(tx => {
+                          const isReceived = tx.type === 'DEPOSIT' || tx.type === 'TRANSFER_IN' || tx.type === 'CLAIM_DIRECT' || tx.type === 'SPEND_REFUND';
+                          const amtStr = isReceived ? `+${Number(tx.netAmount).toFixed(2)} ARES` : `-${Number(tx.amount).toFixed(2)} ARES`;
+                          const amtClass = isReceived ? "tx-amount in !text-emerald-400 font-mono font-bold text-xs" : "tx-amount out !text-zinc-400 font-mono font-bold text-xs";
+                          
+                          return (
+                            <div className="tx-item py-3 border-b border-zinc-900/60" key={tx.id}>
+                              <div className="tx-item-left">
+                                <span className="tx-type text-white font-semibold flex items-center gap-1.5 text-xs">
+                                  {tx.type === 'SPEND' ? (
+                                    <i className="fa-solid fa-cart-shopping text-blue-400 text-xs"></i>
+                                  ) : tx.type === 'SPEND_PENDING' ? (
+                                    <i className="fa-solid fa-hourglass-half text-yellow-500 text-xs"></i>
+                                  ) : tx.type === 'SPEND_REFUND' ? (
+                                    <i className="fa-solid fa-rotate-left text-green-400 text-xs"></i>
+                                  ) : isReceived ? (
+                                    <i className="fa-solid fa-arrow-down-long text-emerald-400 text-xs"></i>
+                                  ) : (
+                                    <i className="fa-solid fa-arrow-up-long text-zinc-400 text-xs"></i>
+                                  )}
+                                  {tx.type}
+                                </span>
+                                <span className="tx-time text-zinc-400 text-xs mt-0.5">
+                                  {tx.description}
+                                </span>
+                                <span className="text-[9px] text-zinc-600 mt-1 block">
+                                  {new Date(tx.timestamp).toLocaleString()}
+                                </span>
+                              </div>
+                              <span className={amtClass}>{amtStr}</span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
                 ) : (
-                  transactions.map(tx => {
-                    const isReceived = tx.type === 'DEPOSIT' || tx.type === 'TRANSFER_IN' || tx.type === 'CLAIM_DIRECT';
-                    const amtStr = isReceived ? `+${tx.netAmount.toFixed(2)} ARES` : `-${tx.amount.toFixed(2)} ARES`;
-                    const amtClass = isReceived ? "tx-amount in !text-emerald-400" : "tx-amount out !text-zinc-400";
-                    
-                    return (
-                      <div className="tx-item" key={tx.id}>
-                        <div className="tx-item-left">
-                          <span className="tx-type text-white font-semibold flex items-center gap-1.5">
-                            {tx.type === 'SPEND' ? (
-                              <i className="fa-solid fa-cart-shopping text-blue-400 text-xs"></i>
-                            ) : isReceived ? (
-                              <i className="fa-solid fa-arrow-down-long text-emerald-400 text-xs"></i>
-                            ) : (
-                              <i className="fa-solid fa-arrow-up-long text-zinc-400 text-xs"></i>
-                            )}
-                            {tx.type}
-                          </span>
-                          <span className="tx-time text-zinc-500">
-                            {tx.description}
-                          </span>
-                          <span className="text-[10px] text-zinc-600">
-                            {new Date(tx.timestamp).toLocaleString()}
-                          </span>
-                        </div>
-                        <span className={amtClass}>{amtStr}</span>
-                      </div>
-                    );
-                  })
+                  <div>
+                    <p className="card-desc mb-4">Pending and processed utility purchases. Rejected requests issue immediate off-chain balance refunds.</p>
+                    <div className="tx-history-list text-left max-h-[500px] overflow-y-auto pr-1">
+                      {userRequests.length === 0 ? (
+                        <div className="tx-item-empty">No utility requests submitted yet.</div>
+                      ) : (
+                        userRequests.map(req => {
+                          const statusClass = 
+                            req.status === 'PENDING' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                            req.status === 'APPROVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                            'bg-red-500/10 text-red-500 border-red-500/20';
+                          
+                          let detailsObj = {};
+                          try { detailsObj = JSON.parse(req.details || '{}'); } catch(e){}
+
+                          return (
+                            <div className="tx-item !flex-col !items-start gap-2.5 py-4 border-b border-zinc-900/60" key={req.id}>
+                              <div className="flex justify-between w-full items-start">
+                                <div>
+                                  <span className="tx-type text-white font-bold flex items-center gap-1.5 text-xs">
+                                    <i className="fa-solid fa-receipt text-zinc-500 text-xs"></i>
+                                    Req #{req.id}: {req.serviceName}
+                                  </span>
+                                  <span className="text-[10px] text-zinc-500 mt-0.5 block">
+                                    {req.categoryName}
+                                  </span>
+                                </div>
+                                <span className="tx-amount out text-zinc-200 font-mono font-bold text-xs">
+                                  -{Number(req.amount).toFixed(2)} ARES
+                                </span>
+                              </div>
+
+                              {/* Dynamic Details Box */}
+                              <div className="bg-[#111218] p-2.5 rounded-lg w-full text-[10px] text-zinc-400 space-y-1">
+                                {Object.entries(detailsObj).map(([k, v]) => {
+                                  const isFile = typeof v === 'string' && v.startsWith('/uploads/');
+                                  return (
+                                    <div key={k} className="flex justify-between items-center py-0.5">
+                                      <span className="text-zinc-500 capitalize">{k.replace(/([A-Z])/g, ' $1')}:</span>
+                                      {isFile ? (
+                                        <a href={v} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline monospace">
+                                          View Uploaded File <i className="fa-solid fa-up-right-from-square text-[8px] ml-0.5"></i>
+                                        </a>
+                                      ) : (
+                                        <span className="text-zinc-350 font-medium">{v}</span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                                
+                                <div className="flex justify-between border-t border-zinc-800/60 mt-2 pt-2 items-center">
+                                  <span>Status:</span>
+                                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${statusClass}`}>{req.status}</span>
+                                </div>
+                                
+                                {req.adminNotes && (
+                                  <div className={`mt-2 pt-2 border-t border-zinc-800/60 italic text-[9.5px] ${req.status === 'APPROVED' ? 'text-green-400' : 'text-red-400/90'}`}>
+                                    <strong>Admin note:</strong> "{req.adminNotes}"
+                                  </div>
+                                )}
+
+                                {req.receiptUrl && (
+                                  <div className="mt-2 pt-2 border-t border-zinc-800/60 flex justify-between items-center">
+                                    <span className="text-zinc-500">Payment Proof:</span>
+                                    <a 
+                                      href={req.receiptUrl} 
+                                      target="_blank" 
+                                      rel="noreferrer" 
+                                      className="text-[10px] text-green-500 hover:text-green-400 font-bold flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded border border-green-500/20"
+                                    >
+                                      <i className="fa-solid fa-circle-check"></i>
+                                      <span>View Receipt Proof</span>
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-[9px] text-zinc-600 block self-end">
+                                {new Date(req.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
+
           </div>
 
-        </div>
-
-      </main>
+        </main>
+      )}
 
     </div>
   );

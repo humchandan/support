@@ -38,7 +38,7 @@ export async function GET(request) {
     const totalClaimed = claims.reduce((acc, c) => acc + Number(c.grossAmount), 0);
     
     // Update user rank in database if it changed
-    const currentRankName = getMlmRankName(totalDeposited, directsCount, teamStats.teamVolume);
+    const currentRankName = await getMlmRankName(totalDeposited, directsCount, teamStats.teamVolume);
     if (user.rank !== currentRankName) {
       await prisma.user.update({
         where: { walletAddress },
@@ -66,7 +66,17 @@ export async function GET(request) {
           txHash: p.txHash,
           timestamp: p.timestamp
         })),
-        totalClaimed: totalClaimed
+        totalClaimed: totalClaimed,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        zip: user.zip,
+        aadhaarNo: user.aadhaarNo,
+        panNo: user.panNo,
+        aadharFrontUrl: user.aadharFrontUrl,
+        aadharBackUrl: user.aadharBackUrl,
+        panCardUrl: user.panCardUrl,
+        profileUpdatesRemaining: user.profileUpdatesRemaining
       }
     });
   } catch (err) {
@@ -82,45 +92,91 @@ export async function POST(request) {
   }
 
   try {
-    const { proxyAddress } = await request.json();
-    if (!proxyAddress) {
-      return Response.json({ error: 'Proxy address is required' }, { status: 400 });
+    const body = await request.json();
+    
+    // If updating proxy address
+    if (body.proxyAddress) {
+      const updatedUser = await prisma.user.update({
+        where: { walletAddress },
+        data: { proxyAddress: body.proxyAddress.toLowerCase() }
+      });
+      return Response.json({ success: true, user: updatedUser });
+    }
+
+    // Otherwise, edit profile details (Name, Mobile, Address, City, State, Zip, Aadhaar, PAN)
+    const user = await prisma.user.findUnique({
+      where: { walletAddress }
+    });
+
+    if (!user) {
+      return Response.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (user.profileUpdatesRemaining <= 0) {
+      return Response.json({ error: 'No profile updates remaining. You can only update your details 3 times.' }, { status: 400 });
     }
 
     const updatedUser = await prisma.user.update({
       where: { walletAddress },
-      data: { proxyAddress: proxyAddress.toLowerCase() }
+      data: {
+        name: body.name || user.name,
+        mobile: body.mobile || user.mobile,
+        address: body.address || user.address,
+        city: body.city || user.city,
+        state: body.state || user.state,
+        zip: body.zip || user.zip,
+        aadhaarNo: body.aadhaarNo || user.aadhaarNo,
+        panNo: body.panNo || user.panNo,
+        aadharFrontUrl: body.aadharFrontUrl || user.aadharFrontUrl,
+        aadharBackUrl: body.aadharBackUrl || user.aadharBackUrl,
+        panCardUrl: body.panCardUrl || user.panCardUrl,
+        profileUpdatesRemaining: user.profileUpdatesRemaining - 1
+      }
     });
 
     return Response.json({ success: true, user: updatedUser });
   } catch (err) {
-    console.error('Failed to update proxy address:', err);
-    return Response.json({ error: 'Failed to update proxy address' }, { status: 500 });
+    console.error('Failed to update profile details:', err);
+    return Response.json({ error: 'Failed to update profile' }, { status: 500 });
   }
 }
 
-// Helper to determine MLM Rank Name based on parameters
-function getMlmRankName(selfInvestment, directs, teamVolume) {
-  const MLM_TIERS = [
-    { name: "Default", minSelfInvestment: 100, minDirects: 0, minTeamVolume: 0 },
-    { name: "Bronze Leader", minSelfInvestment: 2000, minDirects: 2, minTeamVolume: 10000 },
-    { name: "Silver Leader", minSelfInvestment: 5000, minDirects: 4, minTeamVolume: 50000 },
-    { name: "Gold Leader", minSelfInvestment: 10000, minDirects: 6, minTeamVolume: 150000 },
-    { name: "Diamond Leader", minSelfInvestment: 25000, minDirects: 8, minTeamVolume: 500000 },
-    { name: "Crown Leader", minSelfInvestment: 50000, minDirects: 10, minTeamVolume: 1000000 }
-  ];
-  
-  for (let i = MLM_TIERS.length - 1; i >= 0; i--) {
-    const tier = MLM_TIERS[i];
-    if (
-      selfInvestment >= tier.minSelfInvestment &&
-      directs >= tier.minDirects &&
-      teamVolume >= tier.minTeamVolume
-    ) {
-      return tier.name;
+// Helper to determine MLM Rank Name based on parameters dynamically
+async function getMlmRankName(selfInvestment, directs, teamVolume) {
+  try {
+    const dbTiers = await prisma.mlmTier.findMany({
+      orderBy: { minSelfInvestment: 'asc' }
+    });
+    
+    const MLM_TIERS = dbTiers.length > 0 ? dbTiers.map(t => ({
+      name: t.name,
+      minSelfInvestment: Number(t.minSelfInvestment),
+      minDirects: t.minDirects,
+      minTeamVolume: Number(t.minTeamVolume)
+    })) : [
+      { name: "Default", minSelfInvestment: 100, minDirects: 0, minTeamVolume: 0 },
+      { name: "Bronze Leader", minSelfInvestment: 2000, minDirects: 2, minTeamVolume: 10000 },
+      { name: "Silver Leader", minSelfInvestment: 5000, minDirects: 4, minTeamVolume: 50000 },
+      { name: "Gold Leader", minSelfInvestment: 10000, minDirects: 6, minTeamVolume: 150000 },
+      { name: "Diamond Leader", minSelfInvestment: 25000, minDirects: 8, minTeamVolume: 500000 },
+      { name: "Crown Leader", minSelfInvestment: 50000, minDirects: 10, minTeamVolume: 1000000 }
+    ];
+
+    for (let i = MLM_TIERS.length - 1; i >= 0; i--) {
+      const tier = MLM_TIERS[i];
+      if (
+        selfInvestment >= tier.minSelfInvestment &&
+        directs >= tier.minDirects &&
+        teamVolume >= tier.minTeamVolume
+      ) {
+        return tier.name;
+      }
     }
+    return MLM_TIERS[0].name;
+  } catch (e) {
+    console.error("Failed to query dynamic MLM tiers:", e);
+    return "Default";
   }
-  return MLM_TIERS[0].name;
 }
 
 async function calculateTeamVolumeAndDirects(userAddress) {
