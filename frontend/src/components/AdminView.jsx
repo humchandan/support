@@ -25,6 +25,9 @@ export default function AdminView() {
   const [actionNotes, setActionNotes] = useState('');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [receiptUrl, setReceiptUrl] = useState('');
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
   
   // Catalog Form States
   const [newCatName, setNewCatName] = useState('');
@@ -37,6 +40,13 @@ export default function AdminView() {
   const [newSvcMin, setNewSvcMin] = useState('1');
   const [newSvcMax, setNewSvcMax] = useState('1000');
   const [editingService, setEditingService] = useState(null);
+
+  // Dynamic fields builder state
+  const [svcFields, setSvcFields] = useState([]);
+  const [tempFieldName, setTempFieldName] = useState('');
+  const [tempFieldLabel, setTempFieldLabel] = useState('');
+  const [tempFieldType, setTempFieldType] = useState('text');
+  const [tempFieldPlaceholder, setTempFieldPlaceholder] = useState('');
 
   const showToast = (message, isError = false) => {
     setToast({ message, show: true, isError });
@@ -108,20 +118,30 @@ export default function AdminView() {
   }, [jwtToken, userAddress]);
 
   // ── REQUEST APPROVALS ─────────────────────────────────────────────────────
-  const handleApproveRequest = async (reqId) => {
+  const handleApproveRequest = async () => {
+    if (!selectedRequest) return;
     try {
       setLoading(true);
-      showToast("Approving utility recharge request...", false);
+      showToast("Approving utility request and updating ledger...", false);
       const res = await fetch('/api/admin/utility/requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${jwtToken}`
         },
-        body: JSON.stringify({ requestId: reqId, status: 'APPROVED', adminNotes: 'Processed successfully by admin' })
+        body: JSON.stringify({
+          requestId: selectedRequest.id,
+          status: 'APPROVED',
+          adminNotes: actionNotes || 'Processed successfully by admin',
+          receiptUrl
+        })
       });
       if (res.ok) {
         showToast("Request approved successfully!", false);
+        setShowApproveModal(false);
+        setActionNotes('');
+        setReceiptUrl('');
+        setSelectedRequest(null);
         loadRequests();
       } else {
         const data = await res.json();
@@ -131,6 +151,37 @@ export default function AdminView() {
       showToast("Server communication error", true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleReceiptUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploadingReceipt(true);
+    try {
+      const res = await fetch('/api/user/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${jwtToken}`
+        },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setReceiptUrl(data.url);
+        showToast("Receipt uploaded successfully!", false);
+      } else {
+        showToast(data.error || "Upload failed", true);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Receipt upload failed.", true);
+    } finally {
+      setUploadingReceipt(false);
     }
   };
 
@@ -162,6 +213,33 @@ export default function AdminView() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Dynamic custom fields builder helpers
+  const handleAddSvcField = () => {
+    if (!tempFieldName || !tempFieldLabel) {
+      showToast("Field Key and Field Label are required!", true);
+      return;
+    }
+    const cleanKey = tempFieldName.trim().replace(/[^a-zA-Z0-9]/g, '');
+    if (svcFields.some(f => f.name === cleanKey)) {
+      showToast("A field with this Key already exists!", true);
+      return;
+    }
+    setSvcFields(prev => [...prev, {
+      name: cleanKey,
+      label: tempFieldLabel.trim(),
+      type: tempFieldType,
+      placeholder: tempFieldPlaceholder.trim()
+    }]);
+    setTempFieldName('');
+    setTempFieldLabel('');
+    setTempFieldType('text');
+    setTempFieldPlaceholder('');
+  };
+
+  const handleRemoveSvcField = (name) => {
+    setSvcFields(prev => prev.filter(f => f.name !== name));
   };
 
   // ── MLM CONFIGS ───────────────────────────────────────────────────────────
@@ -282,8 +360,8 @@ export default function AdminView() {
       const url = '/api/admin/utility/services';
       const method = isEditing ? 'PUT' : 'POST';
       const payload = isEditing 
-        ? { id: editingService.id, name: newSvcName, description: newSvcDesc, minAmount: newSvcMin, maxAmount: newSvcMax }
-        : { categoryId: selectedCategory.id, name: newSvcName, description: newSvcDesc, minAmount: newSvcMin, maxAmount: newSvcMax };
+        ? { id: editingService.id, name: newSvcName, description: newSvcDesc, minAmount: newSvcMin, maxAmount: newSvcMax, customFields: JSON.stringify(svcFields) }
+        : { categoryId: selectedCategory.id, name: newSvcName, description: newSvcDesc, minAmount: newSvcMin, maxAmount: newSvcMax, customFields: JSON.stringify(svcFields) };
 
       const res = await fetch(url, {
         method,
@@ -299,6 +377,7 @@ export default function AdminView() {
         setNewSvcDesc('');
         setNewSvcMin('1');
         setNewSvcMax('1000');
+        setSvcFields([]);
         setEditingService(null);
         await loadCatalog();
       } else {
@@ -467,7 +546,10 @@ export default function AdminView() {
                                   <div className="flex gap-2 justify-end">
                                     <button 
                                       className="btn-preset active !bg-green-600/20 !text-green-500 border border-green-600/30 hover:!bg-green-600 hover:!text-white"
-                                      onClick={() => handleApproveRequest(req.id)}
+                                      onClick={() => {
+                                        setSelectedRequest(req);
+                                        setShowApproveModal(true);
+                                      }}
                                       disabled={loading}
                                     >
                                       Approve
@@ -781,6 +863,12 @@ export default function AdminView() {
                                   setNewSvcDesc(svc.description);
                                   setNewSvcMin(Number(svc.minAmount).toString());
                                   setNewSvcMax(Number(svc.maxAmount).toString());
+                                  try {
+                                    const parsed = svc.customFields ? JSON.parse(svc.customFields) : [];
+                                    setSvcFields(Array.isArray(parsed) ? parsed : []);
+                                  } catch (e) {
+                                    setSvcFields([]);
+                                  }
                                 }}
                               >
                                 Edit
@@ -839,7 +927,88 @@ export default function AdminView() {
                         </div>
                       </div>
 
-                      <div className="flex gap-2 mt-4">
+                      {/* Dynamic Fields Section */}
+                      <div className="border border-zinc-900 p-4 rounded-xl mt-4 space-y-4 bg-zinc-950/40">
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Dynamic User Form Fields</h5>
+                        
+                        {/* List existing custom fields */}
+                        {svcFields.length === 0 ? (
+                          <p className="text-xs text-zinc-500 italic">No custom fields defined (uses default amount only).</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {svcFields.map(f => (
+                              <div key={f.name} className="flex justify-between items-center bg-[#1b1c24] px-3 py-2 rounded-lg text-xs">
+                                <div>
+                                  <strong className="text-zinc-300">{f.label}</strong>{' '}
+                                  <span className="text-zinc-500">({f.name} • {f.type})</span>
+                                  {f.placeholder && <span className="text-zinc-650 block mt-0.5">Placeholder: "{f.placeholder}"</span>}
+                                </div>
+                                <button type="button" className="text-red-450 hover:text-red-400 p-1" onClick={() => handleRemoveSvcField(f.name)}>
+                                  <i className="fa-solid fa-xmark"></i>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Add new field builder */}
+                        <div className="border-t border-zinc-900/60 pt-4 space-y-3">
+                          <span className="text-[10px] font-bold text-zinc-500 uppercase">Define New Field / Placeholder</span>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="form-group mb-0">
+                              <label style={{ fontSize: '10px' }}>Field Key Name (No space, alphanumeric)</label>
+                              <input 
+                                type="text" 
+                                placeholder="e.g. cardNumber" 
+                                value={tempFieldName}
+                                onChange={(e) => setTempFieldName(e.target.value)}
+                                className="!py-2 !text-xs"
+                              />
+                            </div>
+                            <div className="form-group mb-0">
+                              <label style={{ fontSize: '10px' }}>Display Label (Visible to user)</label>
+                              <input 
+                                type="text" 
+                                placeholder="e.g. Credit Card Number" 
+                                value={tempFieldLabel}
+                                onChange={(e) => setTempFieldLabel(e.target.value)}
+                                className="!py-2 !text-xs"
+                              />
+                            </div>
+                            <div className="form-group mb-0">
+                              <label style={{ fontSize: '10px' }}>Field Type</label>
+                              <select 
+                                value={tempFieldType}
+                                onChange={(e) => setTempFieldType(e.target.value)}
+                                className="w-full bg-[#1b1c24] border border-zinc-800 focus:border-blue-500 focus:outline-none rounded-lg px-3 py-2 text-xs text-white"
+                              >
+                                <option value="text">Text Input</option>
+                                <option value="number">Number Input</option>
+                                <option value="file">File Upload Slot (Bill copy, photo proof)</option>
+                              </select>
+                            </div>
+                            <div className="form-group mb-0">
+                              <label style={{ fontSize: '10px' }}>Placeholder Hint</label>
+                              <input 
+                                type="text" 
+                                placeholder="e.g. Enter 16-digit card no" 
+                                value={tempFieldPlaceholder}
+                                onChange={(e) => setTempFieldPlaceholder(e.target.value)}
+                                className="!py-2 !text-xs"
+                              />
+                            </div>
+                          </div>
+                          <button 
+                            type="button" 
+                            className="btn-preset active !py-1.5 text-[10px] w-auto px-4 !bg-[#252836]"
+                            onClick={handleAddSvcField}
+                          >
+                            <i className="fa-solid fa-plus mr-1"></i> Add Custom Field
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 mt-6">
                         <button className="btn-primary w-full !py-2 text-xs" onClick={handleSaveService} disabled={loading}>
                           {editingService ? "Save Option" : "Add Service Option"}
                         </button>
@@ -905,6 +1074,67 @@ export default function AdminView() {
                 disabled={loading || !actionNotes}
               >
                 Reject & Refund
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approve Modal Popup Dialog */}
+      {showApproveModal && selectedRequest && (
+        <div className="modal-backdrop">
+          <div className="revolut-card max-w-sm w-full p-6 bg-zinc-950 border border-zinc-900 rounded-xl relative shadow-2xl">
+            <h4 className="text-lg font-bold mb-2">Approve Recharge Request</h4>
+            <p className="text-xs text-zinc-500 mb-4">
+              Approve request **#{selectedRequest.id}** for **{Number(selectedRequest.amount).toLocaleString()} ARES**. Fill in transaction receipt details.
+            </p>
+
+            <div className="form-group mb-4">
+              <label>Approval Comment / Info</label>
+              <textarea
+                placeholder="e.g. Recharged successfully on network provider."
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                rows="2"
+                className="w-full bg-zinc-950 border border-zinc-900 rounded p-2 text-xs text-white"
+              ></textarea>
+            </div>
+
+            <div className="form-group mb-4">
+              <label>Receipt File / Link / Tx Hash</label>
+              <input
+                type="text"
+                placeholder="Transaction Hash or URL copy"
+                value={receiptUrl}
+                onChange={(e) => setReceiptUrl(e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-900 rounded p-2 text-xs text-white"
+              />
+            </div>
+
+            <div className="form-group mb-4">
+              <label>Or Upload Payment Receipt Proof</label>
+              <label className="btn-secondary cursor-pointer block text-center !py-2 !text-xs font-semibold">
+                {uploadingReceipt ? <i className="fa-solid fa-spinner fa-spin mr-1"></i> : <i className="fa-solid fa-upload mr-1"></i>}
+                {receiptUrl ? 'Replace Uploaded Receipt' : 'Upload Receipt File'}
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={handleReceiptUpload}
+                />
+              </label>
+            </div>
+
+            <div className="flex gap-3 justify-end mt-4">
+              <button className="btn-preset active" onClick={() => { setShowApproveModal(false); setActionNotes(''); setReceiptUrl(''); setSelectedRequest(null); }}>
+                Cancel
+              </button>
+              <button 
+                className="btn-primary !bg-green-600 hover:!bg-green-700 !py-2 text-xs" 
+                onClick={handleApproveRequest} 
+                disabled={loading || !actionNotes}
+              >
+                Approve & Complete
               </button>
             </div>
           </div>

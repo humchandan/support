@@ -40,7 +40,7 @@ export async function POST(request) {
   }
 
   try {
-    const { requestId, status, adminNotes } = await request.json();
+    const { requestId, status, adminNotes, receiptUrl } = await request.json();
     const rId = parseInt(requestId);
 
     if (!rId || !['APPROVED', 'REJECTED'].includes(status)) {
@@ -63,7 +63,7 @@ export async function POST(request) {
       // 1. Update request status
       await tx.utilityRequest.update({
         where: { id: rId },
-        data: { status, adminNotes }
+        data: { status, adminNotes, receiptUrl }
       });
 
       if (status === 'APPROVED') {

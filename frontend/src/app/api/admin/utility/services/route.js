@@ -17,7 +17,7 @@ export async function POST(request) {
   }
 
   try {
-    const { categoryId, name, description, minAmount, maxAmount } = await request.json();
+    const { categoryId, name, description, minAmount, maxAmount, customFields } = await request.json();
     if (!categoryId || !name || !description) {
       return Response.json({ error: 'Category ID, name, and description are required' }, { status: 400 });
     }
@@ -29,6 +29,7 @@ export async function POST(request) {
         description,
         minAmount: parseFloat(minAmount) || 1.0,
         maxAmount: parseFloat(maxAmount) || 1000.0,
+        customFields: typeof customFields === 'string' ? customFields : JSON.stringify(customFields || []),
         isActive: true
       }
     });
@@ -47,7 +48,7 @@ export async function PUT(request) {
   }
 
   try {
-    const { id, name, description, minAmount, maxAmount, isActive } = await request.json();
+    const { id, name, description, minAmount, maxAmount, isActive, customFields } = await request.json();
     if (!id || !name || !description) {
       return Response.json({ error: 'ID, name, and description are required' }, { status: 400 });
     }
@@ -59,6 +60,7 @@ export async function PUT(request) {
         description,
         minAmount: parseFloat(minAmount),
         maxAmount: parseFloat(maxAmount),
+        customFields: typeof customFields === 'string' ? customFields : JSON.stringify(customFields || []),
         isActive: isActive ?? true
       }
     });

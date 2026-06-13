@@ -66,7 +66,17 @@ export async function GET(request) {
           txHash: p.txHash,
           timestamp: p.timestamp
         })),
-        totalClaimed: totalClaimed
+        totalClaimed: totalClaimed,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        zip: user.zip,
+        aadhaarNo: user.aadhaarNo,
+        panNo: user.panNo,
+        aadharFrontUrl: user.aadharFrontUrl,
+        aadharBackUrl: user.aadharBackUrl,
+        panCardUrl: user.panCardUrl,
+        profileUpdatesRemaining: user.profileUpdatesRemaining
       }
     });
   } catch (err) {
@@ -82,20 +92,52 @@ export async function POST(request) {
   }
 
   try {
-    const { proxyAddress } = await request.json();
-    if (!proxyAddress) {
-      return Response.json({ error: 'Proxy address is required' }, { status: 400 });
+    const body = await request.json();
+    
+    // If updating proxy address
+    if (body.proxyAddress) {
+      const updatedUser = await prisma.user.update({
+        where: { walletAddress },
+        data: { proxyAddress: body.proxyAddress.toLowerCase() }
+      });
+      return Response.json({ success: true, user: updatedUser });
+    }
+
+    // Otherwise, edit profile details (Name, Mobile, Address, City, State, Zip, Aadhaar, PAN)
+    const user = await prisma.user.findUnique({
+      where: { walletAddress }
+    });
+
+    if (!user) {
+      return Response.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (user.profileUpdatesRemaining <= 0) {
+      return Response.json({ error: 'No profile updates remaining. You can only update your details 3 times.' }, { status: 400 });
     }
 
     const updatedUser = await prisma.user.update({
       where: { walletAddress },
-      data: { proxyAddress: proxyAddress.toLowerCase() }
+      data: {
+        name: body.name || user.name,
+        mobile: body.mobile || user.mobile,
+        address: body.address || user.address,
+        city: body.city || user.city,
+        state: body.state || user.state,
+        zip: body.zip || user.zip,
+        aadhaarNo: body.aadhaarNo || user.aadhaarNo,
+        panNo: body.panNo || user.panNo,
+        aadharFrontUrl: body.aadharFrontUrl || user.aadharFrontUrl,
+        aadharBackUrl: body.aadharBackUrl || user.aadharBackUrl,
+        panCardUrl: body.panCardUrl || user.panCardUrl,
+        profileUpdatesRemaining: user.profileUpdatesRemaining - 1
+      }
     });
 
     return Response.json({ success: true, user: updatedUser });
   } catch (err) {
-    console.error('Failed to update proxy address:', err);
-    return Response.json({ error: 'Failed to update proxy address' }, { status: 500 });
+    console.error('Failed to update profile details:', err);
+    return Response.json({ error: 'Failed to update profile' }, { status: 500 });
   }
 }
 

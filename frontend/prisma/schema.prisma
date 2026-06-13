@@ -19,6 +19,18 @@ model User {
   rank           String   @default("Default")
   createdAt      DateTime @default(now())
 
+  // New Profile Details
+  address                 String?
+  city                    String?
+  state                   String?
+  zip                     String?
+  aadhaarNo               String?
+  panNo                   String?
+  aadharFrontUrl          String?
+  aadharBackUrl           String?
+  panCardUrl              String?
+  profileUpdatesRemaining Int      @default(3)
+
   @@index([walletAddress])
   @@index([sponsorAddress])
 }
@@ -90,6 +102,7 @@ model UtilityService {
   minAmount   Decimal         @db.Decimal(20, 8)
   maxAmount   Decimal         @db.Decimal(20, 8)
   isActive    Boolean         @default(true)
+  customFields String?        @db.Text
   category    UtilityCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   requests    UtilityRequest[]
 }
@@ -104,6 +117,7 @@ model UtilityRequest {
   amount       Decimal        @db.Decimal(20, 8)
   status       String         @default("PENDING") // PENDING, APPROVED, REJECTED
   adminNotes   String?
+  receiptUrl   String?
   timestamp    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   service      UtilityService @relation(fields: [serviceId], references: [id])

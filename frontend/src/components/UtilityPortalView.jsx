@@ -65,15 +65,8 @@ export default function UtilityPortalView() {
   const [sideTab, setSideTab] = useState('ledger'); // 'ledger' | 'requests'
 
   // Spend form states
-  const [phoneNo, setPhoneNo] = useState('');
-  const [operator, setOperator] = useState('');
-  const [billId, setBillId] = useState('');
-  const [billProvider, setBillProvider] = useState('');
-  const [internetAcc, setInternetAcc] = useState('');
-  const [internetIsp, setInternetIsp] = useState('');
-  const [voucherBrand, setVoucherBrand] = useState('');
-  const [recipientEmail, setRecipientEmail] = useState('');
-  const [customDetails, setCustomDetails] = useState('');
+  const [dynamicAnswers, setDynamicAnswers] = useState({});
+  const [uploadingField, setUploadingField] = useState({});
   
   const [spendAmount, setSpendAmount] = useState('');
   const [loading, setLoading] = useState(false);
@@ -290,27 +283,24 @@ export default function UtilityPortalView() {
       return;
     }
 
-    let details = {};
-    const catName = selectedCategory?.name?.toLowerCase() || '';
-    if (catName.includes('mobile') || catName.includes('phone')) {
-      if (!phoneNo) { showToast("Enter mobile phone number!", true); return; }
-      details = { phoneNo, operator: operator || selectedService.name };
-    } else if (catName.includes('bill') || catName.includes('utility') || catName.includes('power') || catName.includes('gas') || catName.includes('water')) {
-      if (!billId) { showToast("Enter customer account ID!", true); return; }
-      details = { billId, billProvider: billProvider || selectedService.name };
-    } else if (catName.includes('broadband') || catName.includes('internet') || catName.includes('fiber')) {
-      if (!internetAcc) { showToast("Enter internet account ID!", true); return; }
-      details = { internetAcc, internetIsp: internetIsp || selectedService.name };
-    } else if (catName.includes('voucher') || catName.includes('gift') || catName.includes('shopping')) {
-      if (!recipientEmail) { showToast("Enter recipient email!", true); return; }
-      details = { recipientEmail, voucherBrand: voucherBrand || selectedService.name };
-    } else {
-      if (!recipientEmail && !phoneNo && !billId && !internetAcc && !customDetails) {
-        showToast("Please provide details for the service!", true);
+    let customFieldsArray = [];
+    try {
+      customFieldsArray = selectedService.customFields ? JSON.parse(selectedService.customFields) : [];
+    } catch (err) {
+      customFieldsArray = [];
+    }
+    if (!Array.isArray(customFieldsArray)) customFieldsArray = [];
+
+    // Validate fields
+    for (const f of customFieldsArray) {
+      const val = dynamicAnswers[f.name];
+      if (!val) {
+        showToast(`Please fill out/upload: ${f.label}`, true);
         return;
       }
-      details = { recipientEmail, customDetails, serviceName: selectedService.name };
     }
+
+    const details = dynamicAnswers;
 
     try {
       setLoading(true);
@@ -329,11 +319,7 @@ export default function UtilityPortalView() {
       if (data.success) {
         showToast(`Utility request submitted! Req #${data.request.id} is pending approval.`, false);
         setSpendAmount('');
-        setPhoneNo('');
-        setBillId('');
-        setInternetAcc('');
-        setRecipientEmail('');
-        setCustomDetails('');
+        setDynamicAnswers({});
         loadLedgerAndProxy();
         loadUserRequests();
       } else {
@@ -566,138 +552,92 @@ export default function UtilityPortalView() {
 
                     {/* Spend execution Form */}
                     <form onSubmit={handleSpend} className="space-y-4 text-left">
-                      {/* Mobile category */}
-                      {(selectedCategory?.name?.toLowerCase()?.includes('mobile') || selectedCategory?.name?.toLowerCase()?.includes('phone')) && (
-                        <>
-                          <div className="form-group mb-0">
-                            <label htmlFor="spend-mobile-op">Mobile Operator</label>
-                            <input 
-                              type="text" 
-                              id="spend-mobile-op"
-                              value={operator}
-                              onChange={(e) => setOperator(e.target.value)}
-                              placeholder="e.g. Aries Mobile LTE"
-                            />
-                          </div>
-                          <div className="form-group mb-0">
-                            <label htmlFor="spend-mobile-phone">Phone Number</label>
-                            <input 
-                              type="text" 
-                              id="spend-mobile-phone"
-                              placeholder="e.g. +1 (555) 0199"
-                              value={phoneNo}
-                              onChange={(e) => setPhoneNo(e.target.value)}
-                            />
-                          </div>
-                        </>
-                      )}
+                      {(() => {
+                        let customFieldsArray = [];
+                        try {
+                          customFieldsArray = selectedService?.customFields ? JSON.parse(selectedService.customFields) : [];
+                        } catch (e) {
+                          customFieldsArray = [];
+                        }
+                        if (!Array.isArray(customFieldsArray)) customFieldsArray = [];
 
-                      {/* Bills category */}
-                      {(selectedCategory?.name?.toLowerCase()?.includes('bill') || selectedCategory?.name?.toLowerCase()?.includes('utility') || selectedCategory?.name?.toLowerCase()?.includes('power') || selectedCategory?.name?.toLowerCase()?.includes('gas') || selectedCategory?.name?.toLowerCase()?.includes('water')) && (
-                        <>
-                          <div className="form-group mb-0">
-                            <label htmlFor="spend-bill-prov">Bill Utility Provider</label>
-                            <input 
-                              type="text" 
-                              id="spend-bill-prov"
-                              value={billProvider}
-                              onChange={(e) => setBillProvider(e.target.value)}
-                              placeholder="e.g. Aries Power & Electricity"
-                            />
-                          </div>
-                          <div className="form-group mb-0">
-                            <label htmlFor="spend-bill-id">Customer Account ID</label>
-                            <input 
-                              type="text" 
-                              id="spend-bill-id"
-                              placeholder="e.g. ELEC-992011"
-                              value={billId}
-                              onChange={(e) => setBillId(e.target.value)}
-                            />
-                          </div>
-                        </>
-                      )}
+                        if (customFieldsArray.length === 0) {
+                          return (
+                            <div className="bg-[#16171e] p-4 rounded-xl text-xs text-zinc-500 mb-4 border border-zinc-900 text-center">
+                              No additional input details required for this utility service. Enter payment amount below.
+                            </div>
+                          );
+                        }
 
-                      {/* Internet category */}
-                      {(selectedCategory?.name?.toLowerCase()?.includes('broadband') || selectedCategory?.name?.toLowerCase()?.includes('internet') || selectedCategory?.name?.toLowerCase()?.includes('fiber')) && (
-                        <>
-                          <div className="form-group mb-0">
-                            <label htmlFor="spend-internet-isp">Broadband ISP Provider</label>
-                            <input 
-                              type="text" 
-                              id="spend-internet-isp"
-                              value={internetIsp}
-                              onChange={(e) => setInternetIsp(e.target.value)}
-                              placeholder="e.g. Aries Fiber optic"
-                            />
-                          </div>
-                          <div className="form-group mb-0">
-                            <label htmlFor="spend-internet-acc">Internet User account ID</label>
-                            <input 
-                              type="text" 
-                              id="spend-internet-acc"
-                              placeholder="e.g. user@ariesfiber"
-                              value={internetAcc}
-                              onChange={(e) => setInternetAcc(e.target.value)}
-                            />
-                          </div>
-                        </>
-                      )}
+                        return customFieldsArray.map(f => {
+                          if (f.type === 'file') {
+                            const fileUrl = dynamicAnswers[f.name] || '';
+                            return (
+                              <div className="form-group mb-4 animate-fade-in" key={f.name}>
+                                <label>{f.label}</label>
+                                {fileUrl && (
+                                  <div className="text-xs text-green-500 mb-2 flex items-center gap-1.5 font-semibold">
+                                    <i className="fa-solid fa-circle-check text-green-500"></i>
+                                    <span>Uploaded:</span>
+                                    <a href={fileUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline monospace truncate max-w-[200px]">
+                                      {fileUrl.substring(fileUrl.lastIndexOf('/') + 1)}
+                                    </a>
+                                  </div>
+                                )}
+                                <label className="btn-secondary cursor-pointer block text-center !py-2.5 !text-xs font-semibold">
+                                  {uploadingField[f.name] ? <i className="fa-solid fa-spinner fa-spin mr-1"></i> : <i className="fa-solid fa-upload mr-1"></i>}
+                                  {fileUrl ? 'Replace Uploaded Copy' : `Upload ${f.label}`}
+                                  <input
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                      const file = e.target.files[0];
+                                      if (!file) return;
+                                      const formData = new FormData();
+                                      formData.append('file', file);
+                                      setUploadingField(prev => ({ ...prev, [f.name]: true }));
+                                      try {
+                                        const res = await fetch('/api/user/upload', {
+                                          method: 'POST',
+                                          headers: {
+                                            'Authorization': `Bearer ${jwtToken}`
+                                          },
+                                          body: formData
+                                        });
+                                        const data = await res.json();
+                                        if (res.ok && data.url) {
+                                          setDynamicAnswers(prev => ({ ...prev, [f.name]: data.url }));
+                                          showToast("Document uploaded successfully!", false);
+                                        } else {
+                                          showToast(data.error || "Upload failed", true);
+                                        }
+                                      } catch (err) {
+                                        showToast("Upload failed.", true);
+                                      } finally {
+                                        setUploadingField(prev => ({ ...prev, [f.name]: false }));
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                            );
+                          }
 
-                      {/* Vouchers category */}
-                      {(selectedCategory?.name?.toLowerCase()?.includes('voucher') || selectedCategory?.name?.toLowerCase()?.includes('gift') || selectedCategory?.name?.toLowerCase()?.includes('shopping')) && (
-                        <>
-                          <div className="form-group mb-0">
-                            <label htmlFor="spend-voucher-brand">Select Shopping Brand E-Voucher</label>
-                            <input 
-                              type="text" 
-                              id="spend-voucher-brand"
-                              value={voucherBrand}
-                              onChange={(e) => setVoucherBrand(e.target.value)}
-                              placeholder="e.g. Amazon Gift Card"
-                            />
-                          </div>
-                          <div className="form-group mb-0">
-                            <label htmlFor="spend-recipient-email">Recipient Email Address</label>
-                            <input 
-                              type="email" 
-                              id="spend-recipient-email"
-                              placeholder="e.g. user@example.com"
-                              value={recipientEmail}
-                              onChange={(e) => setRecipientEmail(e.target.value)}
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {/* Generic Fallback category */}
-                      {!selectedCategory?.name?.toLowerCase()?.includes('mobile') && !selectedCategory?.name?.toLowerCase()?.includes('phone') && 
-                       !selectedCategory?.name?.toLowerCase()?.includes('bill') && !selectedCategory?.name?.toLowerCase()?.includes('utility') && !selectedCategory?.name?.toLowerCase()?.includes('power') && !selectedCategory?.name?.toLowerCase()?.includes('gas') && !selectedCategory?.name?.toLowerCase()?.includes('water') &&
-                       !selectedCategory?.name?.toLowerCase()?.includes('broadband') && !selectedCategory?.name?.toLowerCase()?.includes('internet') && !selectedCategory?.name?.toLowerCase()?.includes('fiber') &&
-                       !selectedCategory?.name?.toLowerCase()?.includes('voucher') && !selectedCategory?.name?.toLowerCase()?.includes('gift') && !selectedCategory?.name?.toLowerCase()?.includes('shopping') && (
-                        <>
-                          <div className="form-group mb-0">
-                            <label htmlFor="spend-recipient-custom">Recipient Email / Account ID</label>
-                            <input 
-                              type="text" 
-                              id="spend-recipient-custom"
-                              placeholder="e.g. details@domain.com"
-                              value={recipientEmail}
-                              onChange={(e) => setRecipientEmail(e.target.value)}
-                            />
-                          </div>
-                          <div className="form-group mb-0">
-                            <label htmlFor="spend-details-custom">Additional Reference Details</label>
-                            <input 
-                              type="text" 
-                              id="spend-details-custom"
-                              placeholder="e.g. Special notes/instructions"
-                              value={customDetails}
-                              onChange={(e) => setCustomDetails(e.target.value)}
-                            />
-                          </div>
-                        </>
-                      )}
+                          return (
+                            <div className="form-group mb-4" key={f.name}>
+                              <label htmlFor={`field-${f.name}`}>{f.label}</label>
+                              <input 
+                                type={f.type === 'number' ? 'number' : 'text'}
+                                id={`field-${f.name}`}
+                                placeholder={f.placeholder || `Enter ${f.label}`}
+                                value={dynamicAnswers[f.name] || ''}
+                                onChange={(e) => setDynamicAnswers(prev => ({ ...prev, [f.name]: e.target.value }))}
+                              />
+                            </div>
+                          );
+                        });
+                      })()}
 
                       <div className="form-group">
                         <label htmlFor="spend-amount">Payment Amount</label>
@@ -944,12 +884,21 @@ export default function UtilityPortalView() {
 
                               {/* Dynamic Details Box */}
                               <div className="bg-[#111218] p-2.5 rounded-lg w-full text-[10px] text-zinc-400 space-y-1">
-                                {Object.entries(detailsObj).map(([k, v]) => (
-                                  <div key={k} className="flex justify-between">
-                                    <span className="text-zinc-500 capitalize">{k.replace(/([A-Z])/g, ' $1')}:</span>
-                                    <span className="text-zinc-350 font-medium">{v}</span>
-                                  </div>
-                                ))}
+                                {Object.entries(detailsObj).map(([k, v]) => {
+                                  const isFile = typeof v === 'string' && v.startsWith('/uploads/');
+                                  return (
+                                    <div key={k} className="flex justify-between items-center py-0.5">
+                                      <span className="text-zinc-500 capitalize">{k.replace(/([A-Z])/g, ' $1')}:</span>
+                                      {isFile ? (
+                                        <a href={v} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline monospace">
+                                          View Uploaded File <i className="fa-solid fa-up-right-from-square text-[8px] ml-0.5"></i>
+                                        </a>
+                                      ) : (
+                                        <span className="text-zinc-350 font-medium">{v}</span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                                 
                                 <div className="flex justify-between border-t border-zinc-800/60 mt-2 pt-2 items-center">
                                   <span>Status:</span>
@@ -957,8 +906,23 @@ export default function UtilityPortalView() {
                                 </div>
                                 
                                 {req.adminNotes && (
-                                  <div className="mt-2 pt-2 border-t border-zinc-800/60 text-red-400/90 italic text-[9.5px]">
+                                  <div className={`mt-2 pt-2 border-t border-zinc-800/60 italic text-[9.5px] ${req.status === 'APPROVED' ? 'text-green-400' : 'text-red-400/90'}`}>
                                     <strong>Admin note:</strong> "{req.adminNotes}"
+                                  </div>
+                                )}
+
+                                {req.receiptUrl && (
+                                  <div className="mt-2 pt-2 border-t border-zinc-800/60 flex justify-between items-center">
+                                    <span className="text-zinc-500">Payment Proof:</span>
+                                    <a 
+                                      href={req.receiptUrl} 
+                                      target="_blank" 
+                                      rel="noreferrer" 
+                                      className="text-[10px] text-green-500 hover:text-green-400 font-bold flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded border border-green-500/20"
+                                    >
+                                      <i className="fa-solid fa-circle-check"></i>
+                                      <span>View Receipt Proof</span>
+                                    </a>
                                   </div>
                                 )}
                               </div>
