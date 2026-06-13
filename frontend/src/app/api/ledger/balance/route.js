@@ -20,7 +20,12 @@ export async function GET(request) {
       const amt = Number(entry.amount);
       const net = Number(entry.netAmount);
       
-      if (entry.type === 'DEPOSIT' || entry.type === 'TRANSFER_IN' || entry.type === 'CLAIM_DIRECT') {
+      if (
+        entry.type === 'DEPOSIT' || 
+        entry.type === 'TRANSFER_IN' || 
+        entry.type === 'CLAIM_DIRECT' ||
+        entry.type === 'SPEND_REFUND'
+      ) {
         balance += net;
       } else {
         balance -= amt;

@@ -38,7 +38,7 @@ export async function GET(request) {
     const totalClaimed = claims.reduce((acc, c) => acc + Number(c.grossAmount), 0);
     
     // Update user rank in database if it changed
-    const currentRankName = getMlmRankName(totalDeposited, directsCount, teamStats.teamVolume);
+    const currentRankName = await getMlmRankName(totalDeposited, directsCount, teamStats.teamVolume);
     if (user.rank !== currentRankName) {
       await prisma.user.update({
         where: { walletAddress },
@@ -99,28 +99,42 @@ export async function POST(request) {
   }
 }
 
-// Helper to determine MLM Rank Name based on parameters
-function getMlmRankName(selfInvestment, directs, teamVolume) {
-  const MLM_TIERS = [
-    { name: "Default", minSelfInvestment: 100, minDirects: 0, minTeamVolume: 0 },
-    { name: "Bronze Leader", minSelfInvestment: 2000, minDirects: 2, minTeamVolume: 10000 },
-    { name: "Silver Leader", minSelfInvestment: 5000, minDirects: 4, minTeamVolume: 50000 },
-    { name: "Gold Leader", minSelfInvestment: 10000, minDirects: 6, minTeamVolume: 150000 },
-    { name: "Diamond Leader", minSelfInvestment: 25000, minDirects: 8, minTeamVolume: 500000 },
-    { name: "Crown Leader", minSelfInvestment: 50000, minDirects: 10, minTeamVolume: 1000000 }
-  ];
-  
-  for (let i = MLM_TIERS.length - 1; i >= 0; i--) {
-    const tier = MLM_TIERS[i];
-    if (
-      selfInvestment >= tier.minSelfInvestment &&
-      directs >= tier.minDirects &&
-      teamVolume >= tier.minTeamVolume
-    ) {
-      return tier.name;
+// Helper to determine MLM Rank Name based on parameters dynamically
+async function getMlmRankName(selfInvestment, directs, teamVolume) {
+  try {
+    const dbTiers = await prisma.mlmTier.findMany({
+      orderBy: { minSelfInvestment: 'asc' }
+    });
+    
+    const MLM_TIERS = dbTiers.length > 0 ? dbTiers.map(t => ({
+      name: t.name,
+      minSelfInvestment: Number(t.minSelfInvestment),
+      minDirects: t.minDirects,
+      minTeamVolume: Number(t.minTeamVolume)
+    })) : [
+      { name: "Default", minSelfInvestment: 100, minDirects: 0, minTeamVolume: 0 },
+      { name: "Bronze Leader", minSelfInvestment: 2000, minDirects: 2, minTeamVolume: 10000 },
+      { name: "Silver Leader", minSelfInvestment: 5000, minDirects: 4, minTeamVolume: 50000 },
+      { name: "Gold Leader", minSelfInvestment: 10000, minDirects: 6, minTeamVolume: 150000 },
+      { name: "Diamond Leader", minSelfInvestment: 25000, minDirects: 8, minTeamVolume: 500000 },
+      { name: "Crown Leader", minSelfInvestment: 50000, minDirects: 10, minTeamVolume: 1000000 }
+    ];
+
+    for (let i = MLM_TIERS.length - 1; i >= 0; i--) {
+      const tier = MLM_TIERS[i];
+      if (
+        selfInvestment >= tier.minSelfInvestment &&
+        directs >= tier.minDirects &&
+        teamVolume >= tier.minTeamVolume
+      ) {
+        return tier.name;
+      }
     }
+    return MLM_TIERS[0].name;
+  } catch (e) {
+    console.error("Failed to query dynamic MLM tiers:", e);
+    return "Default";
   }
-  return MLM_TIERS[0].name;
 }
 
 async function calculateTeamVolumeAndDirects(userAddress) {
