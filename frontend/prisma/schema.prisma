@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  walletAddress  String   @unique
+  name           String
+  mobile         String
+  sponsorAddress String
+  proxyAddress   String?  @unique
+  rank           String   @default("Default")
+  createdAt      DateTime @default(now())
+
+  @@index([walletAddress])
+  @@index([sponsorAddress])
+}
+
+model StakingPlan {
+  id          Int      @id @default(autoincrement())
+  userAddress String
+  amount      Decimal  @db.Decimal(20, 8)
+  txHash      String   @unique
+  timestamp   DateTime @default(now())
+
+  @@index([userAddress])
+}
+
+model LedgerEntry {
+  id          Int      @id @default(autoincrement())
+  userAddress String
+  type        String
+  amount      Decimal  @db.Decimal(20, 8)
+  netAmount   Decimal  @db.Decimal(20, 8)
+  fee         Decimal  @db.Decimal(20, 8)
+  description String
+  txHash      String?
+  timestamp   DateTime @default(now())
+
+  @@index([userAddress])
+}
+
+model ClaimHistory {
+  id          Int      @id @default(autoincrement())
+  userAddress String
+  grossAmount Decimal  @db.Decimal(20, 8)
+  netAmount   Decimal  @db.Decimal(20, 8)
+  destination String
+  timestamp   DateTime @default(now())
+
+  @@index([userAddress])
+}

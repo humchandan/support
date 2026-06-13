@@ -1,0 +1,14 @@
+[Unit]
+Description=Aries PoS Consensus Client
+After=network.target geth-node1.service geth-node2.service
+
+[Service]
+Type=simple
+User=humchandan
+WorkingDirectory=/home/humchandan/.gemini/antigravity/scratch/genesis-blockchain
+ExecStart=/home/humchandan/.local/bin/node /home/humchandan/.gemini/antigravity/scratch/genesis-blockchain/blockchain/consensus_client.js
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

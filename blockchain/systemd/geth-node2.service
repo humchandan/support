@@ -1,0 +1,33 @@
+[Unit]
+Description=Aries Geth Execution Node 2
+After=network.target
+
+[Service]
+Type=simple
+User=humchandan
+WorkingDirectory=/home/humchandan/.gemini/antigravity/scratch/genesis-blockchain
+ExecStart=/home/humchandan/.local/bin/geth \
+  --datadir=/home/humchandan/.gemini/antigravity/scratch/genesis-blockchain/blockchain/data/node2 \
+  --networkid=232425 \
+  --port=30304 \
+  --http \
+  --http.addr=127.0.0.1 \
+  --http.port=8546 \
+  --http.corsdomain="*" \
+  --http.api=eth,net,web3,personal,clique,admin,engine \
+  --authrpc.addr=127.0.0.1 \
+  --authrpc.port=8552 \
+  --authrpc.vhosts="*" \
+  --authrpc.jwtsecret=/home/humchandan/.gemini/antigravity/scratch/genesis-blockchain/blockchain/data/jwt.hex \
+  --unlock=0x40a0cb1C63e026A81B55EE1308586E21eec1eFa9 \
+  --password=/home/humchandan/.gemini/antigravity/scratch/genesis-blockchain/blockchain/data/password.txt \
+  --allow-insecure-unlock \
+  --nodiscover \
+  --mine \
+  --miner.etherbase=0x40a0cb1C63e026A81B55EE1308586E21eec1eFa9 \
+  --syncmode=full
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

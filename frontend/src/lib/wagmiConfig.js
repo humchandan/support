@@ -1,0 +1,65 @@
+// Wagmi v2 + RainbowKit config for Aries Local Chain
+// No WalletConnect = No API key required
+import { createConfig, http } from 'wagmi';
+import { connectorsForWallets } from '@rainbow-me/rainbowkit';
+import {
+  metaMaskWallet,
+  coinbaseWallet,
+  trustWallet,
+  braveWallet,
+  injectedWallet,
+  phantomWallet,
+  okxWallet,
+} from '@rainbow-me/rainbowkit/wallets';
+
+// ── Aries Local Chain Definition ──────────────────────────────────────────────
+export const ariesChain = {
+  id: 232425,
+  name: 'Aries Network',
+  nativeCurrency: { name: 'ARES', symbol: 'ARES', decimals: 18 },
+  rpcUrls: {
+    default: { http: [process.env.NEXT_PUBLIC_ARIES_RPC_URL || 'http://127.0.0.1:8545'] },
+  },
+  blockExplorers: {
+    default: { name: 'Aries Explorer', url: 'http://localhost:9081' },
+  },
+  testnet: false,
+};
+
+// ── Wallet Connectors (no WalletConnect → no project ID required) ─────────────
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: 'Popular Wallets',
+      wallets: [
+        metaMaskWallet,
+        coinbaseWallet,
+        trustWallet,
+        phantomWallet,
+        okxWallet,
+      ],
+    },
+    {
+      groupName: 'Other',
+      wallets: [braveWallet, injectedWallet],
+    },
+  ],
+  {
+    appName: 'Aries Protocol',
+    // A dummy projectId — only needed if WalletConnect wallets are included.
+    // Since we exclude WalletConnect, this is never actually used for any API call.
+    projectId: 'aries_local_no_wc',
+  }
+);
+
+// ── Wagmi Config ──────────────────────────────────────────────────────────────
+export const wagmiConfig = createConfig({
+  chains: [ariesChain],
+  connectors,
+  transports: {
+    [ariesChain.id]: http(
+      process.env.NEXT_PUBLIC_ARIES_RPC_URL || 'http://127.0.0.1:8545'
+    ),
+  },
+  ssr: true,
+});
