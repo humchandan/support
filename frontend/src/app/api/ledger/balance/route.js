@@ -24,10 +24,16 @@ export async function GET(request) {
         entry.type === 'DEPOSIT' || 
         entry.type === 'TRANSFER_IN' || 
         entry.type === 'CLAIM_DIRECT' ||
+        entry.type === 'CLAIM_METAMASK_SPLIT' ||
+        entry.type === 'NETWORK_REDEEM' ||
         entry.type === 'SPEND_REFUND'
       ) {
         balance += net;
-      } else {
+      } else if (
+        entry.type === 'SPEND' ||
+        entry.type === 'SPEND_PENDING' ||
+        entry.type === 'TRANSFER_OUT'
+      ) {
         balance -= amt;
       }
     });

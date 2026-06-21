@@ -49,9 +49,20 @@ export async function POST(request) {
     senderEntries.forEach(entry => {
       const amt = Number(entry.amount);
       const net = Number(entry.netAmount);
-      if (entry.type === 'DEPOSIT' || entry.type === 'TRANSFER_IN' || entry.type === 'CLAIM_DIRECT') {
+      if (
+        entry.type === 'DEPOSIT' || 
+        entry.type === 'TRANSFER_IN' || 
+        entry.type === 'CLAIM_DIRECT' ||
+        entry.type === 'CLAIM_METAMASK_SPLIT' ||
+        entry.type === 'NETWORK_REDEEM' ||
+        entry.type === 'SPEND_REFUND'
+      ) {
         senderBalance += net;
-      } else {
+      } else if (
+        entry.type === 'SPEND' ||
+        entry.type === 'SPEND_PENDING' ||
+        entry.type === 'TRANSFER_OUT'
+      ) {
         senderBalance -= amt;
       }
     });

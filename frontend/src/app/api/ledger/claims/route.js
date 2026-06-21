@@ -25,8 +25,8 @@ export async function POST(request) {
       return Response.json({ error: 'Cannot claim rewards without active validation plans.' }, { status: 400 });
     }
     
-    // 2. Verify 2x payout cap limit
-    const maxLimit = totalDeposited * 2;
+    // 2. Verify 2.5x payout cap limit
+    const maxLimit = totalDeposited * 2.5;
     
     const claimHistory = await prisma.claimHistory.findMany({
       where: { userAddress: walletAddress }
@@ -90,6 +90,10 @@ export async function POST(request) {
           timestamp: new Date()
         }
       });
+
+      // Distribute MLM Matching commissions to referrers
+      const { distributeMatchingRewards } = await import('@/lib/mlm');
+      await distributeMatchingRewards(tx, walletAddress, claimable);
     });
     
     return Response.json({ success: true, claimedAmount: netClaimed, fee });

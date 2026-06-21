@@ -1,5 +1,6 @@
-const { PrismaMariaDb } = require('@prisma/adapter-mariadb');
 const { PrismaClient } = require('@prisma/client');
+const { PrismaPg } = require('@prisma/adapter-pg');
+const { Pool } = require('pg');
 const dotenv = require('dotenv');
 const path = require('path');
 
@@ -11,14 +12,8 @@ if (!process.env.DATABASE_URL) {
   process.exit(1);
 }
 
-const dbUrl = new URL(process.env.DATABASE_URL);
-const adapter = new PrismaMariaDb({
-  host: dbUrl.hostname,
-  port: parseInt(dbUrl.port) || 3306,
-  user: dbUrl.username,
-  password: dbUrl.password,
-  database: dbUrl.pathname.replace(/^\//, '')
-});
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 const MLM_TIERS = [

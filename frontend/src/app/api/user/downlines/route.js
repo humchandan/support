@@ -35,12 +35,17 @@ export async function GET(request) {
     // Recursive helper to calculate volume for a specific downline user
     function getDownlineVolume(downlineAddr) {
       let volume = 0;
+      const visited = new Set([downlineAddr.toLowerCase()]);
       
       function traverse(addr, currentLevel) {
         if (currentLevel > 10) return;
-        const children = sponsorMap[addr.toLowerCase()] || [];
+        const cleanAddr = addr.toLowerCase();
+        const children = sponsorMap[cleanAddr] || [];
         children.forEach(child => {
           const childAddr = child.walletAddress.toLowerCase();
+          if (visited.has(childAddr)) return; // Loop protection
+          visited.add(childAddr);
+          
           const childInvestment = investmentMap[childAddr] || 0;
           volume += childInvestment;
           traverse(childAddr, currentLevel + 1);

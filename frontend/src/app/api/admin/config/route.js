@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 
 const ADMIN_ADDRESSES = [
-  '0x963ebdf2e1f8db8707d05fc75bfeffba1b5bac17'
+  '0xd01c1bfc96e22a9470c186e69e0a97e18eff23e6'
 ];
 
 function isAdmin(walletAddress) {

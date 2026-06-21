@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
 }
 
 model User {
@@ -30,6 +30,10 @@ model User {
   aadharBackUrl           String?
   panCardUrl              String?
   profileUpdatesRemaining Int      @default(3)
+
+  // Yield accrual fields
+  yieldBalance            Decimal  @default(0.0) @db.Decimal(20, 8)
+  lastYieldAccruedAt      DateTime @default(now())
 
   @@index([walletAddress])
   @@index([sponsorAddress])
@@ -124,5 +128,28 @@ model UtilityRequest {
 
   @@index([userAddress])
   @@index([status])
+}
+
+model NetworkEarning {
+  id          Int      @id @default(autoincrement())
+  userAddress String
+  fromAddress String
+  level       Int
+  amount      Decimal  @db.Decimal(20, 8)
+  isClaimed   Boolean  @default(false)
+  txHash      String?
+  timestamp   DateTime @default(now())
+
+  @@index([userAddress])
+  @@index([isClaimed])
+}
+
+model EventMedia {
+  id        Int      @id @default(autoincrement())
+  type      String   // IMAGE or VIDEO
+  url       String
+  title     String
+  caption   String?  @db.Text
+  createdAt DateTime @default(now())
 }
 

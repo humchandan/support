@@ -44,12 +44,12 @@ export async function POST(request) {
             walletAddress: sponsor,
             name: 'Sponsor Partner',
             mobile: '+1 (555) 000-1111',
-            sponsorAddress: '0x963ebdf2e1f8db8707d05fc75bfeffba1b5bac17' // Default custodian
+            sponsorAddress: '0xd01c1bfc96e22a9470c186e69e0a97e18eff23e6' // Default custodian
           }
         });
       }
     } else {
-      sponsor = '0x963ebdf2e1f8db8707d05fc75bfeffba1b5bac17'; // Default custodian
+      sponsor = '0xd01c1bfc96e22a9470c186e69e0a97e18eff23e6'; // Default custodian
     }
     
     // Create new user in DB

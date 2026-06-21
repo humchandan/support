@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { accrueUserYield } from '@/lib/yield';
 
 export async function GET(request) {
   const walletAddress = verifyToken(request);
@@ -8,6 +9,9 @@ export async function GET(request) {
   }
   
   try {
+    // 1. Accrue yield up to this instant
+    await accrueUserYield(walletAddress);
+
     const user = await prisma.user.findUnique({
       where: { walletAddress }
     });
@@ -76,7 +80,9 @@ export async function GET(request) {
         aadharFrontUrl: user.aadharFrontUrl,
         aadharBackUrl: user.aadharBackUrl,
         panCardUrl: user.panCardUrl,
-        profileUpdatesRemaining: user.profileUpdatesRemaining
+        profileUpdatesRemaining: user.profileUpdatesRemaining,
+        yieldBalance: Number(user.yieldBalance),
+        lastYieldAccruedAt: user.lastYieldAccruedAt
       }
     });
   } catch (err) {
@@ -201,15 +207,19 @@ async function calculateTeamVolumeAndDirects(userAddress) {
   
   let teamVolume = 0;
   let downlinesList = [];
+  const visited = new Set([userAddress.toLowerCase()]);
   
   function traverse(addr, currentLevel) {
     if (currentLevel > 10) return;
-    const children = sponsorMap[addr.toLowerCase()] || [];
+    const cleanAddr = addr.toLowerCase();
+    const children = sponsorMap[cleanAddr] || [];
     
     children.forEach(child => {
       const childAddr = child.walletAddress.toLowerCase();
+      if (visited.has(childAddr)) return; // Loop protection
+      visited.add(childAddr);
+
       const childInvestment = investmentMap[childAddr] || 0;
-      
       teamVolume += childInvestment;
       
       if (currentLevel === 1) {

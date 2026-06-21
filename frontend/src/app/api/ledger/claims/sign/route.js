@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { accrueUserYield } from '@/lib/yield';
 import { ethers } from 'ethers';
 import fs from 'fs';
 import path from 'path';
@@ -11,14 +12,15 @@ export async function POST(request) {
   }
 
   try {
-    const { accruedAmount } = await request.json();
-    const accrued = parseFloat(accruedAmount) || 0;
+    // 1. Accrue yield up to this instant securely on the server
+    const yieldState = await accrueUserYield(walletAddress);
+    const accrued = yieldState ? yieldState.yieldBalance : 0;
 
     if (accrued < 100.0) {
       return Response.json({ error: 'You must have at least 100 ARES accrued to withdraw to MetaMask.' }, { status: 400 });
     }
 
-    // 1. Fetch user profile to get proxyAddress
+    // 2. Fetch user profile to get proxyAddress
     const user = await prisma.user.findUnique({
       where: { walletAddress }
     });
@@ -59,7 +61,7 @@ export async function POST(request) {
       return Response.json({ error: 'Cannot claim rewards without active validation plans on-chain. Please purchase a plan first.' }, { status: 400 });
     }
 
-    const maxLimit = totalDeposited * 2;
+    const maxLimit = totalDeposited * 2.5;
 
     if (totalClaimed >= maxLimit) {
       return Response.json({ error: 'Lifetime payout limit reached! Please purchase a top-up plan.' }, { status: 400 });
