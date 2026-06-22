@@ -26,15 +26,18 @@ export const ariesChain = {
   testnet: false,
 };
 
-// ── Wallet Connectors (no WalletConnect → no project ID required) ─────────────
+import { walletConnectWallet } from '@rainbow-me/rainbowkit/wallets';
+
+// ── Wallet Connectors ─────────────────────────────────────────────────────────
 const connectors = connectorsForWallets(
   [
     {
       groupName: 'Popular Wallets',
       wallets: [
         metaMaskWallet,
-        coinbaseWallet,
         trustWallet,
+        walletConnectWallet,
+        coinbaseWallet,
         phantomWallet,
         okxWallet,
       ],
@@ -46,9 +49,9 @@ const connectors = connectorsForWallets(
   ],
   {
     appName: 'Aries Protocol',
-    // A dummy projectId — only needed if WalletConnect wallets are included.
-    // Since we exclude WalletConnect, this is never actually used for any API call.
-    projectId: 'aries_local_no_wc',
+    // Replace this with your actual WalletConnect project ID for production!
+    // Get one for free at https://cloud.walletconnect.com
+    projectId: '3c0a514d874a5ea79d86a42217e651ce',
   }
 );
 
