@@ -28,7 +28,7 @@ export const ariesChain = {
 
 import { walletConnectWallet } from '@rainbow-me/rainbowkit/wallets';
 
-// ── Wallet Connectors ─────────────────────────────────────────────────────────
+// ── Wallet Connectors (No WalletConnect = No Reown API needed) ─────────────
 const connectors = connectorsForWallets(
   [
     {
@@ -36,7 +36,6 @@ const connectors = connectorsForWallets(
       wallets: [
         metaMaskWallet,
         trustWallet,
-        walletConnectWallet,
         coinbaseWallet,
         phantomWallet,
         okxWallet,
@@ -49,9 +48,8 @@ const connectors = connectorsForWallets(
   ],
   {
     appName: 'Aries Protocol',
-    // Replace this with your actual WalletConnect project ID for production!
-    // Get one for free at https://cloud.walletconnect.com
-    projectId: '3c0a514d874a5ea79d86a42217e651ce',
+    // Because we removed walletConnectWallet, this ID is never pinged to Reown APIs.
+    projectId: 'aries_local_no_wc',
   }
 );
 
