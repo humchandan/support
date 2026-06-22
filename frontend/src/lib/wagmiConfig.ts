@@ -18,10 +18,10 @@ export const ariesChain = {
   name: 'Aries Network',
   nativeCurrency: { name: 'ARES', symbol: 'ARES', decimals: 18 },
   rpcUrls: {
-    default: { http: [process.env.NEXT_PUBLIC_ARIES_RPC_URL || 'http://127.0.0.1:8545'] },
+    default: { http: [process.env.NEXT_PUBLIC_ARIES_RPC_URL || 'https://rpc.arieschain.org'] },
   },
   blockExplorers: {
-    default: { name: 'Aries Explorer', url: 'http://localhost:9081' },
+    default: { name: 'Aries Explorer', url: 'https://scan.arieschain.org' },
   },
   testnet: false,
 };
@@ -58,7 +58,7 @@ export const wagmiConfig = createConfig({
   connectors,
   transports: {
     [ariesChain.id]: http(
-      process.env.NEXT_PUBLIC_ARIES_RPC_URL || 'http://127.0.0.1:8545'
+      process.env.NEXT_PUBLIC_ARIES_RPC_URL || 'https://rpc.arieschain.org'
     ),
   },
   ssr: true,
