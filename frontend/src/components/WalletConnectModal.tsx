@@ -145,6 +145,29 @@ export default function WalletConnectModal({
     setErrorMsg('');
     setNotInstalledWallet(null);
 
+    // 1. Detect if the user is on a mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+
+    if (isMobile) {
+      const dAppUrl = window.location.href;
+      const cleanUrl = dAppUrl.replace(/^https?:\/\//, '');
+
+      if (wallet.id === 'metamask') {
+        window.location.href = `https://metamask.app.link/dapp/${cleanUrl}`;
+        return;
+      } else if (wallet.id === 'trust') {
+        const encodedUrl = encodeURIComponent(dAppUrl);
+        window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodedUrl}`;
+        return;
+      } else if (wallet.id === 'coinbase') {
+        const encodedUrl = encodeURIComponent(dAppUrl);
+        window.location.href = `https://go.cb-w.com/dapp?cb_url=${encodedUrl}`;
+        return;
+      }
+    }
+
     const isInstalled = wallet.checkInstalled();
     if (!isInstalled && wallet.installUrl) {
       setNotInstalledWallet(wallet);
