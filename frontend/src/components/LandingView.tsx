@@ -42,8 +42,9 @@ export default function LandingView() {
       {/* Landing Top Bar */}
       <header className="revolut-header">
         <div className="header-container">
-          <div className="brand-logo">
-            Aries<span className="dot">.</span>
+          <div className="brand-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <img src="/logo.png" alt="Aries logo" style={{ height: '24px', width: 'auto' }} />
+            <span>Aries<span className="dot">.</span></span>
           </div>
           <div className="header-actions">
             {userAddress ? (

@@ -49,8 +49,8 @@ export default function DashboardView() {
       {/* Brand */}
       <div className="px-6 py-5 border-b border-zinc-800/60">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
-            <span className="text-black font-black text-xs">A</span>
+          <div className="w-8 h-8 rounded-lg overflow-hidden bg-zinc-900 flex items-center justify-center">
+            <img src="/logo.png" alt="Aries Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <div className="text-sm font-bold text-white tracking-tight leading-tight">
@@ -193,8 +193,8 @@ export default function DashboardView() {
         {/* Mobile Top Bar */}
         <header className="lg:hidden flex items-center justify-between px-5 py-4 bg-[#0a0a0c]/80 backdrop-blur-xl border-b border-zinc-800/50 sticky top-0 z-20">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center">
-              <span className="text-black font-black text-[10px]">A</span>
+            <div className="w-7 h-7 rounded-lg overflow-hidden bg-zinc-900 flex items-center justify-center">
+              <img src="/logo.png" alt="Aries Logo" className="w-full h-full object-contain" />
             </div>
             <span className="text-sm font-bold text-white">
               Aries<span className="text-cyan-400">.</span>Portal

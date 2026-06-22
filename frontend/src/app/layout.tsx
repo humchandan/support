@@ -5,6 +5,9 @@ import { Web3Provider } from '../context/Web3Context';
 export const metadata = {
   title: 'Aries Protocol — One Chain. Infinite Possibilities.',
   description: 'Aries is a next-generation blockchain for staking, NFT minting, creator payments, and utility bill settlements. Near-zero fees, sub-second finality.',
+  icons: {
+    icon: '/vercel.ico',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

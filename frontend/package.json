@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "npx tsx src/sweeper.ts & next start",
     "lint": "eslint",
     "postinstall": "prisma generate --schema=./prisma/schema.prisma"
   },

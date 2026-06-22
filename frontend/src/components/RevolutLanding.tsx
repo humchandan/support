@@ -85,7 +85,6 @@ export default function RevolutLanding() {
     { label: 'Benefits', href: '#benefits' },
     { label: 'Ecosystem', href: '#ecosystem' },
     { label: 'Projects', href: '#projects' },
-    { label: 'Promotions', href: '/promotions' },
   ];
 
   const stats = [
@@ -272,22 +271,23 @@ export default function RevolutLanding() {
     <div style={{ minHeight: '100vh', background: '#000000', color: '#ffffff', fontFamily: "'Inter', -apple-system, sans-serif", overflowX: 'hidden' }}>
 
       {/* ── STICKY NAV ── */}
-      <header style={{
+      <header className="aries-nav" style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         padding: '0 2rem', height: 68,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: scrolled ? 'rgba(0,0,0,0.85)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(20px)' : 'none',
-        borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent',
+        background: scrolled || mobileMenuOpen ? 'rgba(0,0,0,0.92)' : 'transparent',
+        backdropFilter: scrolled || mobileMenuOpen ? 'blur(20px)' : 'none',
+        borderBottom: scrolled || mobileMenuOpen ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent',
         transition: 'all 0.3s ease',
       }}>
         {/* Logo */}
-        <div style={{ fontFamily: "'Outfit', sans-serif", fontSize: 24, fontWeight: 900, letterSpacing: -1 }}>
-          Aries<span style={{ color: '#1970ff' }}>.</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Outfit', sans-serif", fontSize: 24, fontWeight: 900, letterSpacing: -1 }}>
+          <img src="/logo.png" alt="Aries logo" style={{ height: '24px', width: 'auto' }} />
+          <span>Aries<span style={{ color: '#1970ff' }}>.</span></span>
         </div>
 
         {/* Desktop Nav */}
-        <nav style={{ display: 'flex', gap: 32, alignItems: 'center' }} className="hidden md:flex">
+        <nav className="aries-nav-desktop" style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
           {navLinks.map(l => (
             <a key={l.label} href={l.href} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: 500, textDecoration: 'none', transition: 'color 0.2s' }}
               onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#fff'}
@@ -296,9 +296,9 @@ export default function RevolutLanding() {
           ))}
         </nav>
 
-        {/* CTA */}
+        {/* Right side: CTA + Hamburger */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <button onClick={handleLaunchApp} disabled={loading} style={{
+          <button className="aries-nav-cta" onClick={handleLaunchApp} disabled={loading} style={{
             background: '#ffffff', color: '#000000',
             border: 'none', borderRadius: 9999,
             fontWeight: 700, fontSize: 15, padding: '10px 24px',
@@ -316,8 +316,73 @@ export default function RevolutLanding() {
           >
             {loading ? <><i className="fa-solid fa-spinner fa-spin" /> &nbsp;Loading</> : userAddress ? 'Open App →' : 'Get started'}
           </button>
+
+          {/* Hamburger button — mobile only */}
+          <button
+            className="aries-nav-hamburger"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+            style={{
+              display: 'none',
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 10,
+              width: 40, height: 40,
+              cursor: 'pointer',
+              color: '#fff', fontSize: 18,
+              alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s',
+            }}
+          >
+            <i className={`fa-solid ${mobileMenuOpen ? 'fa-xmark' : 'fa-bars'}`} />
+          </button>
         </div>
       </header>
+
+      {/* ── MOBILE NAV MENU ── */}
+      <div
+        className="aries-mobile-menu"
+        style={{
+          position: 'fixed', top: 68, left: 0, right: 0, zIndex: 99,
+          background: 'rgba(0,0,0,0.95)',
+          backdropFilter: 'blur(24px)',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          padding: mobileMenuOpen ? '20px 24px 28px' : '0 24px',
+          maxHeight: mobileMenuOpen ? 400 : 0,
+          overflow: 'hidden',
+          transition: 'max-height 0.35s cubic-bezier(0.4,0,0.2,1), padding 0.35s cubic-bezier(0.4,0,0.2,1)',
+          display: 'flex', flexDirection: 'column', gap: 6,
+        }}
+      >
+        {navLinks.map(l => (
+          <a
+            key={l.label}
+            href={l.href}
+            onClick={() => setMobileMenuOpen(false)}
+            style={{
+              color: 'rgba(255,255,255,0.7)', fontSize: 16, fontWeight: 600,
+              textDecoration: 'none', padding: '12px 16px',
+              borderRadius: 12, transition: 'all 0.2s',
+              background: 'transparent',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
+          >{l.label}</a>
+        ))}
+        <button
+          onClick={() => { setMobileMenuOpen(false); handleLaunchApp(); }}
+          disabled={loading}
+          style={{
+            background: '#1970ff', color: '#fff',
+            border: 'none', borderRadius: 12,
+            fontWeight: 700, fontSize: 15, padding: '14px 24px',
+            cursor: 'pointer', marginTop: 8,
+            transition: 'all 0.2s',
+          }}
+        >
+          {loading ? <><i className="fa-solid fa-spinner fa-spin" /> Loading</> : userAddress ? 'Open App →' : 'Connect Wallet'}
+        </button>
+      </div>
 
       {/* ── HERO ── */}
       <section ref={heroRef} style={{ paddingTop: 160, paddingBottom: 120, paddingLeft: 24, paddingRight: 24, maxWidth: 1140, margin: '0 auto', textAlign: 'center' }}>
@@ -602,12 +667,21 @@ export default function RevolutLanding() {
         </div>
       </footer>
 
-      {/* ── KEYFRAME PULSE ── */}
+      {/* ── KEYFRAME PULSE + RESPONSIVE NAV ── */}
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @media(max-width:768px){
           .feature-tab-grid { grid-template-columns: 1fr !important; }
           .project-card-grid { grid-template-columns: 1fr !important; }
+          .aries-nav { padding: 0 1rem !important; }
+          .aries-nav-desktop { display: none !important; }
+          .aries-nav-hamburger { display: flex !important; }
+          .aries-nav-cta { display: none !important; }
+        }
+        @media(min-width:769px){
+          .aries-mobile-menu { display: none !important; }
+          .aries-nav-hamburger { display: none !important; }
+          .aries-nav-desktop { display: flex !important; }
         }
       `}</style>
 
