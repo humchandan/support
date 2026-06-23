@@ -704,31 +704,62 @@ export default function WealthTab() {
   const metamaskShare = netClaimed * 0.50;
   const utilityShare = netClaimed - metamaskShare;
 
-  return (
-    <div id="tab-wealth" className="space-y-6">
+  // ─── Card wrapper component for consistent styling ───
+  const Section = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+    <div className={`bg-[#0c0c0e]/80 backdrop-blur-xl border border-white/5 rounded-2xl p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-cyan-500/20 hover:bg-[#111113]/90 hover:shadow-[0_4px_30px_-4px_rgba(34,211,238,0.1)] ${className}`}>
+      {children}
+    </div>
+  );
 
-      {/* ── TWO-COLUMN LAYOUT ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-4 sm:gap-6">
+  const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+    <div className="text-[11px] font-bold text-cyan-400 uppercase tracking-[0.15em] mb-1.5 flex items-center gap-2">
+      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></div>
+      {children}
+    </div>
+  );
+
+  const SectionTitle = ({ children, icon }: { children: React.ReactNode; icon?: string }) => (
+    <h2 className="text-[18px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400 tracking-tight mb-1 flex items-center gap-2">
+      {icon && <span className="text-base opacity-90 drop-shadow-md">{icon}</span>}
+      {children}
+    </h2>
+  );
+
+  const SectionDesc = ({ children }: { children: React.ReactNode }) => (
+    <p className="text-[13px] text-zinc-400 leading-relaxed mb-6 font-medium">{children}</p>
+  );
+
+  const StatCard = ({ label, value, color = 'text-white', sub }: { label: string; value: string | number; color?: string; sub?: string }) => (
+    <div className="bg-black/40 rounded-xl px-4 py-3.5 border border-white/5 hover:border-white/10 transition-colors shadow-inner">
+      <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1.5">{label}</div>
+      <div className={`text-[16px] font-bold ${color} tabular-nums tracking-tight`}>{value}</div>
+      {sub && <div className="text-[11px] text-zinc-500 mt-1 font-medium">{sub}</div>}
+    </div>
+  );
+
+  return (
+    <div id="tab-wealth" className="space-y-5 max-w-[1200px] mx-auto">
+
+      {/* ══════════════════════ TWO-COLUMN LAYOUT ══════════════════════ */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-5">
 
         {/* ── LEFT COLUMN ── */}
-        <div className="flex flex-col gap-4 sm:gap-6">
+        <div className="flex flex-col gap-5">
 
-          {/* Buy Validation Plan */}
-          <BackgroundGradient containerClassName="w-full" className="bg-zinc-900 border border-zinc-800 rounded-[22px] p-4 sm:p-6 md:p-8 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/[0.03] rounded-full blur-3xl pointer-events-none" />
-            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Investment</div>
-            <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Buy Validation Plan</h2>
-            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">Deposit native ARES to buy a support plan. Earn 8.5% monthly yield and unlock MLM matching commissions.</p>
+          {/* ─── Buy Validation Plan ─── */}
+          <Section>
+            <SectionLabel>Investment</SectionLabel>
+            <SectionTitle icon="⚡">Buy Validation Plan</SectionTitle>
+            <SectionDesc>Deposit native ARES to buy a support plan. Earn 8.5% monthly yield and unlock MLM matching commissions.</SectionDesc>
 
-            {/* Preset buttons */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="grid grid-cols-3 gap-2 mb-4">
               {[1000, 5000, 10000].map(preset => (
                 <button
                   key={preset}
                   onClick={() => { setPurchaseAmount(preset); setActivePreset(preset); }}
-                  className={`py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold border transition-all duration-200 ${activePreset === preset
-                      ? 'bg-white text-black border-white shadow-lg shadow-white/10'
-                      : 'bg-zinc-950/60 text-zinc-300 border-zinc-800/60 hover:bg-zinc-800/60 hover:text-white hover:border-zinc-700/60'
+                  className={`py-2.5 rounded-xl text-xs font-semibold border transition-all duration-200 ${activePreset === preset
+                    ? 'bg-white text-black border-white/80'
+                    : 'bg-[#0c0c0e] text-[#8e8ea0] border-[#1e1e22] hover:border-[#3a3a42] hover:text-white'
                     }`}
                 >
                   {preset.toLocaleString()} ARES
@@ -736,9 +767,8 @@ export default function WealthTab() {
               ))}
             </div>
 
-            {/* Custom input */}
-            <div className="mb-6">
-              <label className="block text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Or Enter Custom Amount</label>
+            <div className="mb-5">
+              <label className="block text-[11px] font-medium text-[#6e6e80] mb-1.5 uppercase tracking-wider">Or Enter Custom Amount</label>
               <div className="relative">
                 <input
                   type="number"
@@ -748,72 +778,71 @@ export default function WealthTab() {
                   step="100"
                   value={purchaseAmount}
                   onChange={(e) => { setPurchaseAmount(e.target.value); setActivePreset(null); }}
-                  className="w-full bg-zinc-950/80 border border-zinc-800/60 rounded-xl px-4 py-3.5 pr-16 text-white text-sm focus:outline-none focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600/30 placeholder-zinc-600 transition-all"
+                  className="w-full bg-[#0c0c0e] border border-[#1e1e22] rounded-xl px-4 py-3 pr-16 text-white text-sm focus:outline-none focus:border-[#3a3a42] placeholder-[#3a3a42] transition-colors"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-500">ARES</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-medium text-[#4e4e5c]">ARES</span>
               </div>
-              <p className="text-[11px] text-zinc-600 mt-2">Must be 100 ARES or higher, in increments of 100.</p>
+              <p className="text-[11px] text-[#4e4e5c] mt-1.5">Must be 100 ARES or higher, in increments of 100.</p>
             </div>
 
             <button
-              className="w-full py-3.5 bg-white text-black font-bold rounded-xl text-sm hover:bg-zinc-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-3 bg-white text-black font-semibold rounded-xl text-sm hover:bg-[#e4e4e7] active:scale-[0.98] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               onClick={handleBuyPlan}
               disabled={txLoading}
             >
-              {txLoading ? <><i className="fa-solid fa-spinner fa-spin text-sm" /> Processing...</> : '⚡ Buy Validation Plan'}
+              {txLoading ? <><i className="fa-solid fa-spinner fa-spin text-sm" /> Processing...</> : 'Buy Validation Plan'}
             </button>
-          </BackgroundGradient>
+          </Section>
 
-          {/* Staking Investment History */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
-            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">History</div>
-            <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Staking Investment History</h2>
-            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">Track all your active validation plan purchases with blockchain verified timestamps.</p>
+          {/* ─── Staking Investment History ─── */}
+          <Section>
+            <SectionLabel>History</SectionLabel>
+            <SectionTitle icon="📋">Staking Investment History</SectionTitle>
+            <SectionDesc>Track all your active validation plan purchases with blockchain verified timestamps.</SectionDesc>
 
-            <div className="w-full mt-2">
-              {!userProfile?.stakingPlans || userProfile.stakingPlans.length === 0 ? (
-                <div className="px-4 py-8 text-center text-zinc-600 text-sm border border-zinc-800/40 rounded-xl mt-4">No plans purchased yet.</div>
-              ) : (
-                <HoverEffect className="py-2" items={userProfile.stakingPlans.map((plan, index) => {
+            {!userProfile?.stakingPlans || userProfile.stakingPlans.length === 0 ? (
+              <div className="py-10 text-center text-[#4e4e5c] text-sm border border-dashed border-[#1e1e22] rounded-xl">No plans purchased yet.</div>
+            ) : (
+              <div className="space-y-2">
+                {userProfile.stakingPlans.map((plan, index) => {
                   const abbrHash = `${plan.txHash.substring(0, 6)}...${plan.txHash.substring(plan.txHash.length - 4)}`;
-                  return {
-                    title: `${plan.amount.toLocaleString()} ARES`,
-                    description: new Date(plan.timestamp).toLocaleString(),
-                    content: (
-                      <div className="flex flex-col gap-2 relative z-50">
-                        <span className="font-bold text-white text-xl">{plan.amount.toLocaleString()} ARES</span>
-                        <span className="text-zinc-400 text-xs">{new Date(plan.timestamp).toLocaleString()}</span>
-                        <a
-                          href={`http://localhost:9081/tx/${plan.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-mono text-cyan-400 hover:text-cyan-300 text-xs transition-colors mt-2"
-                        >
-                          {abbrHash}
-                        </a>
+                  return (
+                    <div key={index} className="flex items-center justify-between bg-[#0c0c0e] border border-[#1a1a1e] rounded-xl px-4 py-3 group hover:border-[#2a2a30] transition-colors">
+                      <div>
+                        <div className="text-[14px] font-semibold text-white">{plan.amount.toLocaleString()} ARES</div>
+                        <div className="text-[11px] text-[#6e6e80] mt-0.5">{new Date(plan.timestamp).toLocaleString()}</div>
                       </div>
-                    )
-                  }
-                })} />
-              )}
-            </div>
-          </div>
-
-          {/* MLM Organization & Unlocks */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
-            <div className="flex items-start justify-between gap-4 mb-6">
-              <div>
-                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Organization</div>
-                <h2 className="text-xl font-bold text-white tracking-tight mb-1">MLM Organization & Unlocks</h2>
-                <p className="text-sm text-zinc-400 leading-relaxed">Track your team size, volume, and current leadership tier ranking.</p>
+                      <a
+                        href={`http://localhost:9081/tx/${plan.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-[11px] text-[#6e6e80] hover:text-cyan-400 transition-colors bg-[#111113] border border-[#1e1e22] px-2.5 py-1 rounded-lg"
+                      >
+                        {abbrHash} →
+                      </a>
+                    </div>
+                  );
+                })}
               </div>
-              {/* View toggle */}
-              <div className="flex gap-1 bg-zinc-950/60 border border-zinc-800/40 rounded-xl p-1 flex-shrink-0">
+            )}
+          </Section>
+
+          {/* ─── MLM Organization & Unlocks ─── */}
+          <Section>
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <SectionLabel>Organization</SectionLabel>
+                <SectionTitle icon="🏢">MLM Organization & Unlocks</SectionTitle>
+                <p className="text-[13px] text-[#8e8ea0] leading-relaxed mt-0.5">Track your team size, volume, and current leadership tier ranking.</p>
+              </div>
+              <div className="flex bg-[#0c0c0e] border border-[#1e1e22] rounded-lg p-0.5 flex-shrink-0">
                 {['table', 'tree'].map(mode => (
                   <button
                     key={mode}
                     onClick={() => { setMlmViewMode(mode); if (mode === 'tree') { setPanX(250); setPanY(50); setZoom(1); } }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 capitalize ${mlmViewMode === mode ? 'bg-white text-black' : 'text-zinc-500 hover:text-white'
+                    className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all duration-200 capitalize ${mlmViewMode === mode
+                      ? 'bg-white text-black shadow-sm'
+                      : 'text-[#6e6e80] hover:text-white'
                       }`}
                   >
                     {mode}
@@ -822,66 +851,56 @@ export default function WealthTab() {
               </div>
             </div>
 
-            {/* Stats row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
-              {[
-                { label: 'Active Directs', value: realDirects },
-                { label: 'Team Volume', value: `${realTeamVolume.toLocaleString()} ARES` },
-                { label: 'Rank Achieved', value: userProfile?.rank || 'Default' },
-              ].map((stat, i) => (
-                <div key={i} className="bg-zinc-950/60 rounded-xl p-4 border border-zinc-800/40">
-                  <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wide mb-1.5">{stat.label}</div>
-                  <div className="text-base font-black text-white leading-tight">{stat.value}</div>
-                </div>
-              ))}
+            <div className="grid grid-cols-3 gap-2 mb-5">
+              <StatCard label="Active Directs" value={realDirects} />
+              <StatCard label="Team Volume" value={`${realTeamVolume.toLocaleString()}`} sub="ARES" />
+              <StatCard label="Rank" value={userProfile?.rank || 'Default'} />
             </div>
 
             {mlmViewMode === 'table' ? (
               <div>
-                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Matching Bonus Tiers — 10 Levels</div>
-                <div className="overflow-hidden rounded-xl border border-zinc-800/40">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-zinc-950/60 border-b border-zinc-800/40">
-                          <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Level</th>
-                          <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Bonus</th>
-                          <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Required Rank</th>
-                          <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-800/30">
-                        {dbLevels.map((lvl, idx) => {
-                          const isUnlocked = hasUnlockedLevel(realRank, lvl.level);
-                          return (
-                            <tr key={idx} className="hover:bg-zinc-800/20 transition-colors">
-                              <td className="px-4 py-3 font-bold text-white text-xs">Level {lvl.level}</td>
-                              <td className="px-4 py-3 text-zinc-300 text-xs font-mono">{Number(lvl.bonus).toFixed(2)}%</td>
-                              <td className="px-4 py-3 text-zinc-400 text-xs">{lvl.requiredRank}</td>
-                              <td className="px-4 py-3">
-                                {isUnlocked ? (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded-full">
-                                    <i className="fa-solid fa-lock-open text-[9px]" /> Unlocked
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-500 bg-zinc-800/40 px-2 py-0.5 rounded-full">
-                                    <i className="fa-solid fa-lock text-[9px]" /> Locked
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                <div className="text-[10px] font-semibold text-[#6e6e80] uppercase tracking-wider mb-2">Matching Bonus Tiers — 10 Levels</div>
+                <div className="overflow-hidden rounded-xl border border-[#1e1e22]">
+                  <table className="w-full text-[13px]">
+                    <thead>
+                      <tr className="bg-[#0c0c0e] border-b border-[#1e1e22]">
+                        <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-[#6e6e80] uppercase tracking-wider">Level</th>
+                        <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-[#6e6e80] uppercase tracking-wider">Bonus</th>
+                        <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-[#6e6e80] uppercase tracking-wider hidden sm:table-cell">Required Rank</th>
+                        <th className="text-right px-4 py-2.5 text-[10px] font-semibold text-[#6e6e80] uppercase tracking-wider">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dbLevels.map((lvl, idx) => {
+                        const isUnlocked = hasUnlockedLevel(realRank, lvl.level);
+                        return (
+                          <tr key={idx} className="border-b border-[#1e1e22] last:border-0 hover:bg-[#0c0c0e]/50 transition-colors">
+                            <td className="px-4 py-2.5 font-medium text-white text-[13px]">Level {lvl.level}</td>
+                            <td className="px-4 py-2.5 text-[#8e8ea0] font-mono text-[13px]">{Number(lvl.bonus).toFixed(1)}%</td>
+                            <td className="px-4 py-2.5 text-[#6e6e80] text-[13px] hidden sm:table-cell">{lvl.requiredRank}</td>
+                            <td className="px-4 py-2.5 text-right">
+                              {isUnlocked ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Unlocked
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#4e4e5c] bg-[#0c0c0e] px-2 py-0.5 rounded-full border border-[#1e1e22]">
+                                  <i className="fa-solid fa-lock text-[8px]" /> Locked
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             ) : (
               <div>
-                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Interactive Downline Tree</div>
+                <div className="text-[10px] font-semibold text-[#6e6e80] uppercase tracking-wider mb-2">Interactive Downline Tree</div>
                 <div
-                  className="w-full h-[350px] bg-zinc-950/60 border border-zinc-800/40 rounded-xl relative overflow-hidden"
+                  className="w-full h-[350px] bg-[#0c0c0e] border border-[#1e1e22] rounded-xl relative overflow-hidden"
                   style={{ cursor: isDraggingTree ? 'grabbing' : 'grab' }}
                 >
                   <svg
@@ -899,27 +918,23 @@ export default function WealthTab() {
                         <stop offset="100%" stopColor="#e4e4e7" />
                       </linearGradient>
                       <linearGradient id="childGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#09090b" />
-                        <stop offset="100%" stopColor="#18181b" />
+                        <stop offset="0%" stopColor="#18181b" />
+                        <stop offset="100%" stopColor="#111113" />
                       </linearGradient>
-                      <filter id="shadow" x="-10%" y="-10%" width="125%" height="125%">
-                        <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000000" floodOpacity="0.5" />
-                      </filter>
                     </defs>
                     <g transform={`translate(${panX}, ${panY}) scale(${zoom})`}>
-                      {/* Root Card (YOU) */}
-                      <g className="tree-node" transform="translate(-60, -25)">
-                        <rect width="120" height="50" rx="8" fill="url(#rootGrad)" filter="url(#shadow)" stroke="#ffffff" strokeWidth="1.5" />
-                        <text x="60" y="22" textAnchor="middle" fill="#000000" fontSize="10" fontWeight="bold" fontFamily="sans-serif">YOU (Primary)</text>
+                      <g transform="translate(-60, -25)">
+                        <rect width="120" height="50" rx="10" fill="url(#rootGrad)" stroke="#ffffff" strokeWidth="1" />
+                        <text x="60" y="22" textAnchor="middle" fill="#000000" fontSize="10" fontWeight="600" fontFamily="system-ui">YOU (Primary)</text>
                         <text x="60" y="38" textAnchor="middle" fill="#71717a" fontSize="8" fontFamily="monospace">{realSelfInvestment.toLocaleString()} ARES</text>
                       </g>
 
                       {realDirects === 0 ? (
                         <>
-                          <line x1="0" y1="25" x2="0" y2="100" stroke="#1a1c24" strokeWidth="1.5" strokeDasharray="3,3" />
-                          <g transform="translate(-90, 100)">
-                            <rect width="180" height="40" rx="8" fill="#111218" stroke="#1a1c24" strokeWidth="1" />
-                            <text x="90" y="24" textAnchor="middle" fill="#858e99" fontSize="10" fontFamily="sans-serif">No directs sponsored yet</text>
+                          <line x1="0" y1="25" x2="0" y2="100" stroke="#1e1e22" strokeWidth="1.5" strokeDasharray="4,4" />
+                          <g transform="translate(-80, 100)">
+                            <rect width="160" height="36" rx="10" fill="#111113" stroke="#1e1e22" strokeWidth="1" />
+                            <text x="80" y="22" textAnchor="middle" fill="#6e6e80" fontSize="10" fontFamily="system-ui">No directs sponsored yet</text>
                           </g>
                         </>
                       ) : (
@@ -933,21 +948,19 @@ export default function WealthTab() {
                             for (let i = 0; i < realDirects; i++) {
                               const childX = startX + i * spacing;
                               const partner = downlines[i];
-                              const partnerName = partner ? partner.name : `Direct Recruit #${i + 1}`;
+                              const partnerName = partner ? partner.name : `Recruit #${i + 1}`;
                               const partnerAddr = partner ? partner.walletAddress : '';
-
                               nodes.push(
                                 <g key={i}>
-                                  <path d={`M 0 25 L ${childX} ${childY - 25}`} stroke="#27272a" strokeWidth="1" fill="none" opacity="0.8" />
+                                  <path d={`M 0 25 L ${childX} ${childY - 25}`} stroke="#1e1e22" strokeWidth="1" fill="none" />
                                   <g
-                                    className="tree-node"
                                     transform={`translate(${childX - 60}, ${childY - 25})`}
                                     style={{ cursor: partner ? 'pointer' : 'default' }}
                                     onClick={() => partner && handleInspectPartner(partnerAddr)}
                                   >
-                                    <rect width="120" height="50" rx="8" fill="url(#childGrad)" filter="url(#shadow)" stroke="#27272a" strokeWidth="1" />
-                                    <text x="60" y="22" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="bold" fontFamily="sans-serif">{partnerName}</text>
-                                    <text x="60" y="38" textAnchor="middle" fill="#10b981" fontSize="8" fontFamily="monospace">Active Plan</text>
+                                    <rect width="120" height="50" rx="10" fill="url(#childGrad)" stroke="#1e1e22" strokeWidth="1" />
+                                    <text x="60" y="22" textAnchor="middle" fill="#fafafa" fontSize="9" fontWeight="600" fontFamily="system-ui">{partnerName}</text>
+                                    <text x="60" y="38" textAnchor="middle" fill="#10b981" fontSize="8" fontFamily="monospace">Active</text>
                                   </g>
                                 </g>
                               );
@@ -959,11 +972,11 @@ export default function WealthTab() {
                                 const level2Y = 250;
                                 nodes.push(
                                   <g key="lvl2">
-                                    <path d={`M ${child1X} ${childY + 25} L ${child1X} ${level2Y - 25}`} stroke="#00d27a" strokeWidth="1.5" fill="none" />
-                                    <g className="tree-node" transform={`translate(${child1X - 60}, ${level2Y - 25})`}>
-                                      <rect width="120" height="50" rx="8" fill="url(#childGrad)" filter="url(#shadow)" stroke="#00d27a" strokeWidth="1.5" />
-                                      <text x="60" y="22" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold" fontFamily="sans-serif">Level 2 Downline</text>
-                                      <text x="60" y="38" textAnchor="middle" fill="#00d27a" fontSize="9" fontFamily="sans-serif">Unlocked (Bronze)</text>
+                                    <path d={`M ${child1X} ${childY + 25} L ${child1X} ${level2Y - 25}`} stroke="#10b981" strokeWidth="1.5" fill="none" />
+                                    <g transform={`translate(${child1X - 60}, ${level2Y - 25})`}>
+                                      <rect width="120" height="50" rx="10" fill="url(#childGrad)" stroke="#10b981" strokeWidth="1" />
+                                      <text x="60" y="22" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="600" fontFamily="system-ui">Level 2</text>
+                                      <text x="60" y="38" textAnchor="middle" fill="#10b981" fontSize="9" fontFamily="system-ui">Unlocked</text>
                                     </g>
                                   </g>
                                 );
@@ -971,23 +984,23 @@ export default function WealthTab() {
                                   const level3Y = 350;
                                   nodes.push(
                                     <g key="lvl4">
-                                      <path d={`M ${child1X} ${level2Y + 25} L ${child1X} ${level3Y - 25}`} stroke="#1970ff" strokeWidth="1.5" fill="none" />
-                                      <g className="tree-node" transform={`translate(${child1X - 60}, ${level3Y - 25})`}>
-                                        <rect width="120" height="50" rx="8" fill="url(#childGrad)" filter="url(#shadow)" stroke="#1970ff" strokeWidth="1.5" />
-                                        <text x="60" y="22" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="bold" fontFamily="sans-serif">Level 4 Downline</text>
-                                        <text x="60" y="38" textAnchor="middle" fill="#1970ff" fontSize="9" fontFamily="sans-serif">Unlocked (Silver)</text>
+                                      <path d={`M ${child1X} ${level2Y + 25} L ${child1X} ${level3Y - 25}`} stroke="#3b82f6" strokeWidth="1.5" fill="none" />
+                                      <g transform={`translate(${child1X - 60}, ${level3Y - 25})`}>
+                                        <rect width="120" height="50" rx="10" fill="url(#childGrad)" stroke="#3b82f6" strokeWidth="1" />
+                                        <text x="60" y="22" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="600" fontFamily="system-ui">Level 4</text>
+                                        <text x="60" y="38" textAnchor="middle" fill="#3b82f6" fontSize="9" fontFamily="system-ui">Unlocked</text>
                                       </g>
                                     </g>
                                   );
                                 } else {
                                   const level3Y = 350;
                                   nodes.push(
-                                    <g key="lvl4-locked" opacity="0.5">
-                                      <path d={`M ${child1X} ${level2Y + 25} L ${child1X} ${level3Y - 25}`} stroke="#1a1c24" strokeWidth="1.5" strokeDasharray="3,3" fill="none" />
-                                      <g className="tree-node" transform={`translate(${child1X - 60}, ${level3Y - 25})`}>
-                                        <rect width="120" height="50" rx="8" fill="#111218" stroke="#1a1c24" strokeWidth="1" />
-                                        <text x="60" y="22" textAnchor="middle" fill="#858e99" fontSize="10" fontFamily="sans-serif">Level 4 Downline</text>
-                                        <text x="60" y="38" textAnchor="middle" fill="#ff453a" fontSize="9" fontFamily="sans-serif">Locked (Silver)</text>
+                                    <g key="lvl4-locked" opacity="0.4">
+                                      <path d={`M ${child1X} ${level2Y + 25} L ${child1X} ${level3Y - 25}`} stroke="#1e1e22" strokeWidth="1.5" strokeDasharray="4,4" fill="none" />
+                                      <g transform={`translate(${child1X - 60}, ${level3Y - 25})`}>
+                                        <rect width="120" height="50" rx="10" fill="#111113" stroke="#1e1e22" strokeWidth="1" />
+                                        <text x="60" y="22" textAnchor="middle" fill="#6e6e80" fontSize="10" fontFamily="system-ui">Level 4</text>
+                                        <text x="60" y="38" textAnchor="middle" fill="#ef4444" fontSize="9" fontFamily="system-ui">Locked</text>
                                       </g>
                                     </g>
                                   );
@@ -995,12 +1008,12 @@ export default function WealthTab() {
                               } else {
                                 const level2Y = 250;
                                 nodes.push(
-                                  <g key="lvl2-locked" opacity="0.5">
-                                    <path d={`M ${child1X} ${childY + 25} L ${child1X} ${level2Y - 25}`} stroke="#1a1c24" strokeWidth="1.5" strokeDasharray="3,3" fill="none" />
-                                    <g className="tree-node" transform={`translate(${child1X - 60}, ${level2Y - 25})`}>
-                                      <rect width="120" height="50" rx="8" fill="#111218" stroke="#1a1c24" strokeWidth="1" />
-                                      <text x="60" y="22" textAnchor="middle" fill="#858e99" fontSize="10" fontFamily="sans-serif">Level 2 Downline</text>
-                                      <text x="60" y="38" textAnchor="middle" fill="#ff453a" fontSize="9" fontFamily="sans-serif">Locked (Bronze)</text>
+                                  <g key="lvl2-locked" opacity="0.4">
+                                    <path d={`M ${child1X} ${childY + 25} L ${child1X} ${level2Y - 25}`} stroke="#1e1e22" strokeWidth="1.5" strokeDasharray="4,4" fill="none" />
+                                    <g transform={`translate(${child1X - 60}, ${level2Y - 25})`}>
+                                      <rect width="120" height="50" rx="10" fill="#111113" stroke="#1e1e22" strokeWidth="1" />
+                                      <text x="60" y="22" textAnchor="middle" fill="#6e6e80" fontSize="10" fontFamily="system-ui">Level 2</text>
+                                      <text x="60" y="38" textAnchor="middle" fill="#ef4444" fontSize="9" fontFamily="system-ui">Locked</text>
                                     </g>
                                   </g>
                                 );
@@ -1012,29 +1025,28 @@ export default function WealthTab() {
                       )}
                     </g>
                   </svg>
-                  <div className="absolute bottom-3 right-3 text-[10px] text-zinc-600 bg-black/60 px-2 py-1 rounded-lg backdrop-blur-sm">
-                    Drag to pan • Scroll to zoom
+                  <div className="absolute bottom-2.5 right-2.5 text-[10px] text-[#4e4e5c] bg-[#111113]/90 px-2 py-1 rounded-md backdrop-blur-sm border border-[#1e1e22]">
+                    Drag to pan · Scroll to zoom
                   </div>
                 </div>
               </div>
             )}
-          </div>
+          </Section>
 
-          {/* Referral Center */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
-            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Referrals</div>
-            <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Referral Center & Downlines Directory</h2>
-            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">Share your personal referral link to invite partners and earn 10 levels of matching yield commissions.</p>
+          {/* ─── Referral Center ─── */}
+          <Section>
+            <SectionLabel>Referrals</SectionLabel>
+            <SectionTitle icon="🔗">Referral Center & Directory</SectionTitle>
+            <SectionDesc>Share your personal referral link to invite partners and earn 10 levels of matching yield commissions.</SectionDesc>
 
-            {/* Referral link */}
-            <div className="mb-6">
-              <label className="block text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Your Personal Referral Link</label>
+            <div className="mb-5">
+              <label className="block text-[11px] font-medium text-[#6e6e80] mb-1.5 uppercase tracking-wider">Your Personal Referral Link</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   readOnly
                   value={userAddress ? `${window.location.origin}?ref=${userAddress}` : 'Please connect wallet'}
-                  className="flex-1 min-w-0 bg-zinc-950/80 border border-zinc-800/60 rounded-xl px-4 py-3 text-zinc-400 text-xs font-mono focus:outline-none"
+                  className="flex-1 min-w-0 bg-[#0c0c0e] border border-[#1e1e22] rounded-xl px-4 py-2.5 text-[#8e8ea0] text-[12px] font-mono focus:outline-none"
                 />
                 <button
                   title="Copy referral link"
@@ -1044,126 +1056,124 @@ export default function WealthTab() {
                       showToast('Referral link copied to clipboard!', false);
                     }
                   }}
-                  className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/60 rounded-xl text-zinc-300 hover:text-white transition-all text-sm"
+                  className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-[#0c0c0e] hover:bg-[#1e1e22] border border-[#1e1e22] rounded-xl text-[#6e6e80] hover:text-white transition-all text-sm"
                 >
                   <i className="fa-solid fa-copy text-xs" />
                 </button>
               </div>
             </div>
 
-            {/* Search */}
-            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Sponsored Partners</div>
-            <div className="mb-4">
+            <div className="text-[10px] font-semibold text-[#6e6e80] uppercase tracking-wider mb-2">Sponsored Partners</div>
+            <div className="mb-3">
               <input
                 type="text"
                 placeholder="Search by name, mobile, or address..."
                 value={downlineSearch}
                 onChange={(e) => setDownlineSearch(e.target.value)}
-                className="w-full bg-zinc-950/80 border border-zinc-800/60 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-zinc-600 placeholder-zinc-600 transition-all"
+                className="w-full bg-[#0c0c0e] border border-[#1e1e22] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#3a3a42] placeholder-[#3a3a42] transition-colors"
               />
             </div>
 
-            <div className="w-full mt-2">
-              {filteredDownlines.length === 0 ? (
-                <div className="px-4 py-8 text-center text-zinc-600 text-sm border border-zinc-800/40 rounded-xl mt-4">No matching partners found.</div>
-              ) : (
-                <HoverEffect className="py-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-2" items={filteredDownlines.map((d, index) => {
+            {filteredDownlines.length === 0 ? (
+              <div className="py-8 text-center text-[#4e4e5c] text-sm border border-dashed border-[#1e1e22] rounded-xl">No matching partners found.</div>
+            ) : (
+              <div className="space-y-2">
+                {filteredDownlines.map((d, index) => {
                   const abbr = `${d.walletAddress.substring(0, 6)}...${d.walletAddress.substring(d.walletAddress.length - 4)}`;
-                  return {
-                    title: d.name,
-                    description: d.mobile,
-                    content: (
-                      <div className="flex flex-col gap-2 relative z-50 cursor-pointer" onClick={() => handleInspectPartner(d.walletAddress)}>
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-white text-base">{d.name}</span>
-                          <span className="font-mono text-zinc-500 text-[10px]">{abbr}</span>
+                  return (
+                    <div
+                      key={index}
+                      onClick={() => handleInspectPartner(d.walletAddress)}
+                      className="flex items-center justify-between bg-[#0c0c0e] border border-[#1a1a1e] rounded-xl px-4 py-3 cursor-pointer hover:border-[#2a2a30] transition-colors group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1e1e22] to-[#2a2a30] flex items-center justify-center text-[11px] text-[#8e8ea0] font-semibold flex-shrink-0">
+                          {d.name.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-zinc-400 text-xs">{d.mobile}</span>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <div className="bg-zinc-900/50 rounded-lg p-2">
-                            <div className="text-[9px] text-zinc-500 uppercase">Self Staking</div>
-                            <div className="font-bold text-white text-xs">{d.selfInvestment.toLocaleString()} ARES</div>
-                          </div>
-                          <div className="bg-zinc-900/50 rounded-lg p-2">
-                            <div className="text-[9px] text-zinc-500 uppercase">Team Vol</div>
-                            <div className="font-bold text-white text-xs">{d.teamVolume.toLocaleString()} ARES</div>
-                          </div>
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-medium text-white truncate">{d.name}</div>
+                          <div className="text-[11px] text-[#6e6e80] font-mono">{abbr}</div>
                         </div>
                       </div>
-                    )
-                  }
-                })} />
-              )}
-            </div>
-          </div>
-
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="text-right hidden sm:block">
+                          <div className="text-[12px] font-semibold text-white">{d.selfInvestment.toLocaleString()}</div>
+                          <div className="text-[10px] text-[#6e6e80]">Self Staking</div>
+                        </div>
+                        <i className="fa-solid fa-chevron-right text-[10px] text-[#3a3a42] group-hover:text-[#6e6e80] transition-colors" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Section>
         </div>
 
         {/* ── RIGHT COLUMN ── */}
-        <div className="flex flex-col gap-4 sm:gap-6">
+        <div className="flex flex-col gap-5">
 
-          {/* Payout Limit Status */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
-            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Payout Cap</div>
-            <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Payout Limit Status</h2>
-            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">All yields and MLM matching commissions count towards your hard 250% payout limit.</p>
+          {/* ─── Payout Limit Status ─── */}
+          <Section>
+            <SectionLabel>Payout Cap</SectionLabel>
+            <SectionTitle icon="📊">Payout Limit Status</SectionTitle>
+            <SectionDesc>All yields and MLM matching commissions count towards your hard 250% payout limit.</SectionDesc>
 
             {/* Progress bar */}
-            <div className="mb-6">
+            <div className="mb-5">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-xs text-zinc-500 font-medium">Total Claimed</span>
-                <span className="text-xs font-bold text-white font-mono">
+                <span className="text-[11px] text-[#6e6e80] font-medium">Total Claimed</span>
+                <span className="text-[12px] font-semibold text-white font-mono">
                   {realTotalClaimed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / {realMaxLimit.toLocaleString()} ARES
                 </span>
               </div>
-              <div className="h-2 bg-zinc-800/60 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-[#1e1e22] rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${realFillPct >= 100 ? 'bg-red-500' : realFillPct > 80 ? 'bg-amber-500' : 'bg-gradient-to-r from-cyan-500 to-blue-500'
-                    }`}
+                  className={`h-full rounded-full transition-all duration-700 ${realFillPct >= 100 ? 'bg-red-500' : realFillPct > 80 ? 'bg-amber-500' : 'bg-white'}`}
                   style={{ width: `${realFillPct}%` }}
                 />
               </div>
-              <div className="flex justify-between items-center mt-1.5">
-                <span className="text-[10px] text-zinc-600">{realFillPct.toFixed(1)}% used</span>
-                <span className="text-[10px] text-zinc-600">{(100 - realFillPct).toFixed(1)}% remaining</span>
+              <div className="flex justify-between mt-1.5">
+                <span className="text-[10px] text-[#4e4e5c]">{realFillPct.toFixed(1)}% used</span>
+                <span className="text-[10px] text-[#4e4e5c]">{(100 - realFillPct).toFixed(1)}% remaining</span>
               </div>
 
               {realFillPct >= 100 && (
-                <div className="mt-3 flex items-center gap-2 px-3 py-2.5 bg-red-950/40 border border-red-900/40 rounded-xl text-xs text-red-400">
+                <div className="mt-3 flex items-center gap-2 px-3 py-2.5 bg-red-500/10 border border-red-500/20 rounded-xl text-[12px] text-red-400">
                   <i className="fa-solid fa-triangle-exclamation flex-shrink-0" />
-                  <span>Limit reached! Please purchase a top-up plan to continue withdrawals.</span>
+                  <span>Limit reached! Purchase a top-up plan to continue.</span>
                 </div>
               )}
             </div>
 
             {/* Details */}
-            <div className="space-y-2.5">
+            <div className="space-y-0">
               {[
-                { label: 'Active Plans Purchase', value: `${realSelfInvestment.toLocaleString()} ARES`, color: '' },
-                { label: 'Maximum Payout (2.5x)', value: `${realMaxLimit.toLocaleString()} ARES`, color: '' },
+                { label: 'Active Plans Purchase', value: `${realSelfInvestment.toLocaleString()} ARES` },
+                { label: 'Maximum Payout (2.5x)', value: `${realMaxLimit.toLocaleString()} ARES` },
                 { label: 'Withdrawn Balance', value: `${realTotalClaimed.toLocaleString()} ARES`, color: 'text-emerald-400' },
-                { label: 'Remaining Cap Capacity', value: `${realRemainingCap.toLocaleString()} ARES`, color: 'text-cyan-400' },
+                { label: 'Remaining Cap', value: `${realRemainingCap.toLocaleString()} ARES`, color: 'text-cyan-400' },
               ].map((row, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-zinc-800/30 last:border-0">
-                  <span className="text-xs text-zinc-500">{row.label}</span>
-                  <span className={`text-xs font-bold ${row.color || 'text-white'}`}>{row.value}</span>
+                <div key={i} className="flex items-center justify-between py-2.5 border-b border-[#1e1e22] last:border-0">
+                  <span className="text-[12px] text-[#6e6e80]">{row.label}</span>
+                  <span className={`text-[12px] font-semibold font-mono ${row.color || 'text-white'}`}>{row.value}</span>
                 </div>
               ))}
             </div>
-          </div>
+          </Section>
 
-          {/* Withdrawal Center */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
-            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Withdrawals</div>
-            <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Withdrawal Center</h2>
-            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
+          {/* ─── Withdrawal Center ─── */}
+          <Section className="flex flex-col">
+            <SectionLabel>Withdrawals</SectionLabel>
+            <SectionTitle icon="💰">Withdrawal Center</SectionTitle>
+            <SectionDesc>
               {withdrawalType === 'metamask'
                 ? 'Claims split 50/50: 50% to MetaMask and 50% to your utility account (minus 10% admin fee).'
                 : 'Claims go 100% directly to your off-chain Utility Portal account balance (minus 10% admin fee).'}
-            </p>
+            </SectionDesc>
 
             {/* Toggle */}
-            <div className="flex gap-1 bg-zinc-950/60 border border-zinc-800/40 rounded-xl p-1 mb-6">
+            <div className="flex bg-[#0c0c0e] border border-[#1e1e22] rounded-lg p-0.5 mb-5">
               {[
                 { key: 'metamask', label: 'MetaMask Split' },
                 { key: 'utility', label: 'Utility Wallet' },
@@ -1171,7 +1181,9 @@ export default function WealthTab() {
                 <button
                   key={opt.key}
                   onClick={() => setWithdrawalType(opt.key)}
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${withdrawalType === opt.key ? 'bg-white text-black shadow-md' : 'text-zinc-500 hover:text-white'
+                  className={`flex-1 py-2 rounded-md text-[12px] font-semibold transition-all duration-200 ${withdrawalType === opt.key
+                    ? 'bg-white text-black shadow-sm'
+                    : 'text-[#6e6e80] hover:text-white'
                     }`}
                 >
                   {opt.label}
@@ -1180,89 +1192,88 @@ export default function WealthTab() {
             </div>
 
             {/* Accrued Ticker */}
-            <div className="bg-zinc-950/60 border border-zinc-800/40 rounded-xl p-5 mb-4 text-center">
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Accrued Rewards (Yield + MLM)</div>
-              <div className="text-3xl font-black text-white tracking-tight tabular-nums">
+            <div className="bg-[#0c0c0e] border border-[#1e1e22] rounded-xl px-5 py-5 mb-4 text-center">
+              <div className="text-[10px] font-semibold text-[#6e6e80] uppercase tracking-wider mb-2">Accrued Rewards</div>
+              <div className="text-3xl font-semibold text-white tracking-tight tabular-nums font-mono">
                 {accruedRewards.toFixed(6)}
               </div>
-              <div className="text-xs text-zinc-500 font-mono mt-1">ARES</div>
+              <div className="text-[11px] text-[#4e4e5c] font-mono mt-1">ARES</div>
             </div>
 
             {/* Info banner */}
-            <div className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border mb-5 text-xs ${withdrawalType === 'metamask'
-                ? 'bg-cyan-950/30 border-cyan-900/40 text-cyan-400'
-                : 'bg-emerald-950/30 border-emerald-900/40 text-emerald-400'
+            <div className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border mb-4 text-[12px] ${withdrawalType === 'metamask'
+              ? 'bg-cyan-500/5 border-cyan-500/15 text-cyan-400'
+              : 'bg-emerald-500/5 border-emerald-500/15 text-emerald-400'
               }`}>
-              <i className="fa-solid fa-circle-info flex-shrink-0 mt-0.5" />
-              <span>
+              <i className="fa-solid fa-circle-info flex-shrink-0 mt-0.5 text-[11px]" />
+              <span className="leading-relaxed">
                 {withdrawalType === 'metamask'
-                  ? 'MetaMask Split requires a minimum of 100 ARES accrued. Payout splits 50/50 net of a 10% fee.'
-                  : 'Utility Wallet Direct allows instant claim of any amount, limited to 4 claims per month.'}
+                  ? 'Min 100 ARES accrued. Payout splits 50/50 net of 10% fee.'
+                  : 'Instant claim of any amount, limited to 4 claims per month.'}
               </span>
             </div>
 
             {/* Estimated distribution */}
             {accruedRewards > 0 && realSelfInvestment > 0 && (
-              <div className="space-y-1.5 mb-5">
-                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Estimated Distribution</div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-zinc-500">Admin Fee (10%)</span>
-                  <span className="font-mono text-red-400">-{adminFee.toFixed(6)} ARES</span>
+              <div className="space-y-1 mb-4">
+                <div className="text-[10px] font-semibold text-[#6e6e80] uppercase tracking-wider mb-2">Estimated Distribution</div>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-[#6e6e80]">Admin Fee (10%)</span>
+                  <span className="font-mono text-red-400">-{adminFee.toFixed(6)}</span>
                 </div>
                 {withdrawalType === 'metamask' ? (
                   <>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-zinc-500">→ MetaMask Wallet (50%)</span>
+                    <div className="flex justify-between text-[12px]">
+                      <span className="text-[#6e6e80]">→ MetaMask (50%)</span>
                       <span className="font-mono text-emerald-400">+{metamaskShare.toFixed(6)}</span>
                     </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-zinc-500">→ Utility Wallet (50%)</span>
+                    <div className="flex justify-between text-[12px]">
+                      <span className="text-[#6e6e80]">→ Utility (50%)</span>
                       <span className="font-mono text-cyan-400">+{utilityShare.toFixed(6)}</span>
                     </div>
                   </>
                 ) : (
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-zinc-500">→ Utility Wallet (100%)</span>
-                    <span className="font-mono text-cyan-400">+{netClaimed.toFixed(6)}</span>
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-[#6e6e80]">→ Utility Wallet (100%)</span>
+                    <span className="font-mono text-emerald-400">+{netClaimed.toFixed(6)}</span>
                   </div>
                 )}
               </div>
             )}
 
-            <button
-              className="w-full py-3.5 bg-white text-black font-bold rounded-xl text-sm hover:bg-zinc-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              onClick={handleClaimRewards}
-              disabled={txLoading}
-            >
-              {txLoading ? <><i className="fa-solid fa-spinner fa-spin" /> Processing...</> : withdrawalType === 'metamask' ? '💰 Claim Split Payout' : '🏦 Claim to Utility Wallet'}
-            </button>
-          </div>
-
+            <div className="mt-auto">
+              <button
+                className="w-full py-3 bg-white text-black font-semibold rounded-xl text-sm hover:bg-[#e4e4e7] active:scale-[0.98] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                onClick={handleClaimRewards}
+                disabled={txLoading}
+              >
+                {txLoading ? <><i className="fa-solid fa-spinner fa-spin" /> Processing...</> : withdrawalType === 'metamask' ? 'Claim Split Payout' : 'Claim to Utility Wallet'}
+              </button>
+            </div>
+          </Section>
         </div>
       </div>
 
-      {/* ── PROJECTIONS CENTER (Full-width below) ── */}
-      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
-        <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Simulator</div>
-        <h2 className="text-xl font-bold text-white tracking-tight mb-1.5 flex items-center gap-2">
-          <span className="text-cyan-400">⚗</span> Projections & Simulation Center
-        </h2>
-        <p className="text-sm text-zinc-400 mb-8 leading-relaxed">Simulate different staking amounts, direct sponsor size, and team business volume to see simulated rank, unlocked levels, and earnings cap crossover projections.</p>
+      {/* ══════════════════════ PROJECTIONS CENTER (Full-width) ══════════════════════ */}
+      <Section>
+        <SectionLabel>Simulator</SectionLabel>
+        <SectionTitle icon="⚗">Projections & Simulation Center</SectionTitle>
+        <SectionDesc>Simulate different staking amounts, direct sponsor size, and team volume to see projected rank, unlocked levels, and earnings cap crossover.</SectionDesc>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Controls */}
-          <div className="space-y-6">
+          <div className="space-y-5">
             {[
-              { label: 'Simulated Self-Staking', value: `${simStaking.toLocaleString()} ARES`, min: 100, max: 100000, step: 100, state: simStaking, setter: setSimStaking, marks: ['100', '25,000', '50,000', '100,000+'] },
-              { label: 'Simulated Direct Recruits', value: `${simDirects} ${simDirects === 1 ? 'Partner' : 'Partners'}`, min: 0, max: 12, step: 1, state: simDirects, setter: setSimDirects, marks: ['0', '4', '8', '12+'] },
-              { label: 'Simulated Team Volume', value: `${simTeamVolume.toLocaleString()} ARES`, min: 0, max: 1200000, step: 10000, state: simTeamVolume, setter: setSimTeamVolume, marks: ['0', '150,000', '500,000', '1M+'] },
-              { label: 'Simulated Downline Monthly Yield', value: `${simDownlineYield.toLocaleString()} ARES`, min: 0, max: 100000, step: 1000, state: simDownlineYield, setter: setSimDownlineYield, marks: ['0', '25,000', '50,000', '100,000'] },
+              { label: 'Simulated Self-Staking', value: `${simStaking.toLocaleString()} ARES`, min: 100, max: 100000, step: 100, state: simStaking, setter: setSimStaking, marks: ['100', '25K', '50K', '100K'] },
+              { label: 'Simulated Direct Recruits', value: `${simDirects} ${simDirects === 1 ? 'Partner' : 'Partners'}`, min: 0, max: 12, step: 1, state: simDirects, setter: setSimDirects, marks: ['0', '4', '8', '12'] },
+              { label: 'Simulated Team Volume', value: `${simTeamVolume.toLocaleString()} ARES`, min: 0, max: 1200000, step: 10000, state: simTeamVolume, setter: setSimTeamVolume, marks: ['0', '150K', '500K', '1.2M'] },
+              { label: 'Simulated Downline Yield', value: `${simDownlineYield.toLocaleString()} ARES`, min: 0, max: 100000, step: 1000, state: simDownlineYield, setter: setSimDownlineYield, marks: ['0', '25K', '50K', '100K'] },
             ].map((slider, i) => (
               <div key={i}>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-semibold text-zinc-400">{slider.label}</label>
-                  <span className="text-xs font-black text-cyan-400 font-mono">{slider.value}</span>
+                  <label className="text-[11px] font-medium text-[#8e8ea0] uppercase tracking-wider">{slider.label}</label>
+                  <span className="text-[12px] font-semibold text-white font-mono bg-[#0c0c0e] border border-[#1e1e22] px-2 py-0.5 rounded-md">{slider.value}</span>
                 </div>
                 <input
                   type="range"
@@ -1271,9 +1282,9 @@ export default function WealthTab() {
                   step={slider.step}
                   value={slider.state}
                   onChange={(e) => slider.setter(parseInt(e.target.value))}
-                  className="w-full h-1.5 bg-zinc-800 rounded-full appearance-none cursor-pointer accent-cyan-400"
+                  className="w-full h-1.5 bg-[#1e1e22] rounded-full appearance-none cursor-pointer accent-white"
                 />
-                <div className="flex justify-between text-[10px] text-zinc-600 mt-1">
+                <div className="flex justify-between text-[10px] text-[#4e4e5c] mt-1">
                   {slider.marks.map(m => <span key={m}>{m}</span>)}
                 </div>
               </div>
@@ -1281,81 +1292,69 @@ export default function WealthTab() {
           </div>
 
           {/* Results */}
-          <div className="space-y-5">
-            {/* Sim stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-              {[
-                { label: 'Simulated Rank', value: simRank.name, color: 'text-cyan-400' },
-                { label: 'Unlock Ratio', value: `${getUnlockedLevelsCount(simRank)} / 10`, color: 'text-emerald-400' },
-                { label: 'Months to Cap', value: simMonthlyTotal > 0 ? `${simMonthsToCap.toFixed(1)}mo` : '∞', color: 'text-amber-400' },
-              ].map((stat, i) => (
-                <div key={i} className="bg-zinc-950/60 rounded-xl p-4 border border-zinc-800/40 text-center">
-                  <div className="text-[9px] text-zinc-600 font-bold uppercase tracking-wide mb-1.5">{stat.label}</div>
-                  <div className={`text-base font-black ${stat.color} leading-tight`}>{stat.value}</div>
-                </div>
-              ))}
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-2">
+              <StatCard label="Sim. Rank" value={simRank.name} color="text-cyan-400" />
+              <StatCard label="Unlocked" value={`${getUnlockedLevelsCount(simRank)} / 10`} color="text-emerald-400" />
+              <StatCard label="Cap Hit" value={simMonthlyTotal > 0 ? `${simMonthsToCap.toFixed(1)}mo` : '∞'} color="text-amber-400" />
             </div>
 
-            {/* Monthly breakdown */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-              {[
-                { label: 'Monthly Yield', value: `${simMonthlyYield.toFixed(2)}`, color: 'text-white' },
-                { label: 'Monthly Matching', value: `${simMonthlyMatching.toFixed(2)}`, color: 'text-white' },
-                { label: '2.5x Cap Limit', value: `${simMaxCap.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: 'text-red-400' },
-              ].map((stat, i) => (
-                <div key={i} className="bg-zinc-950/60 rounded-xl p-4 border border-zinc-800/40">
-                  <div className="text-[9px] text-zinc-600 font-bold uppercase tracking-wide mb-1.5">{stat.label}</div>
-                  <div className={`text-sm font-black ${stat.color} font-mono`}>{stat.value}</div>
-                  <div className="text-[9px] text-zinc-600 mt-0.5">ARES</div>
-                </div>
-              ))}
+            <div className="grid grid-cols-3 gap-2">
+              <StatCard label="Mo. Yield" value={simMonthlyYield.toFixed(0)} sub="ARES" />
+              <StatCard label="Mo. Matching" value={simMonthlyMatching.toFixed(0)} sub="ARES" />
+              <StatCard label="2.5x Cap" value={simMaxCap.toLocaleString(undefined, { maximumFractionDigits: 0 })} sub="ARES" color="text-red-400" />
             </div>
 
-            {/* Canvas projection */}
+            {/* Canvas projection chart */}
             <div>
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">12-Month Accumulation Projection</div>
-              <div className="w-full h-[180px] bg-zinc-950/60 border border-zinc-800/40 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-semibold text-[#6e6e80] uppercase tracking-wider">12-Month Projection</span>
+                <div className="flex gap-3">
+                  <span className="flex items-center gap-1 text-[10px] text-[#6e6e80]"><span className="w-2 h-0.5 bg-[#3b82f6] rounded-full inline-block" /> Earnings</span>
+                  <span className="flex items-center gap-1 text-[10px] text-[#6e6e80]"><span className="w-2 h-0.5 bg-red-500 rounded-full inline-block" /> Cap</span>
+                </div>
+              </div>
+              <div className="w-full h-[180px] bg-[#0c0c0e] border border-[#1e1e22] rounded-xl overflow-hidden">
                 <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
               </div>
             </div>
           </div>
-
         </div>
-      </div>
+      </Section>
 
-      {/* ── PARTNER INSPECTOR MODAL ── */}
+      {/* ══════════════════════ PARTNER INSPECTOR MODAL ══════════════════════ */}
       {showModal && inspectedPartner && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={() => setShowModal(false)}
         >
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div
-            className="relative w-full max-w-lg bg-zinc-900 border border-zinc-800/60 rounded-2xl p-6 md:p-8 shadow-2xl"
+            className="relative w-full max-w-md bg-[#111113] border border-[#1e1e22] rounded-2xl p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-white">Partner Profile</h3>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-[16px] font-semibold text-white">Partner Profile</h3>
               <button
-                className="w-8 h-8 flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 rounded-xl text-zinc-400 hover:text-white transition-all text-sm"
+                className="w-7 h-7 flex items-center justify-center bg-[#1e1e22] hover:bg-[#2a2a30] rounded-lg text-[#6e6e80] hover:text-white transition-all text-[12px]"
                 onClick={() => setShowModal(false)}
               >
                 ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               {[
-                { label: '👤 Full Name', value: inspectedPartner.name, full: false },
-                { label: '📱 Mobile Number', value: inspectedPartner.mobile, full: false },
-                { label: '🔑 Wallet Address', value: inspectedPartner.walletAddress, full: true, mono: true },
-                { label: '💰 Self Staking', value: `${inspectedPartner.selfInvestment.toLocaleString()} ARES`, full: false, color: 'text-emerald-400' },
-                { label: '🌐 Team Volume', value: `${inspectedPartner.teamVolume.toLocaleString()} ARES`, full: false, color: 'text-cyan-400' },
-                { label: '👥 Direct Recruits', value: inspectedPartner.directs, full: false },
+                { label: 'Full Name', value: inspectedPartner.name, full: false },
+                { label: 'Mobile', value: inspectedPartner.mobile, full: false },
+                { label: 'Wallet Address', value: inspectedPartner.walletAddress, full: true, mono: true },
+                { label: 'Self Staking', value: `${inspectedPartner.selfInvestment.toLocaleString()} ARES`, full: false, color: 'text-emerald-400' },
+                { label: 'Team Volume', value: `${inspectedPartner.teamVolume.toLocaleString()} ARES`, full: false, color: 'text-cyan-400' },
+                { label: 'Direct Recruits', value: inspectedPartner.directs, full: false },
               ].map((field, i) => (
-                <div key={i} className={`${field.full ? 'col-span-2' : ''}`}>
-                  <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wide mb-1">{field.label}</div>
-                  <div className={`text-sm font-bold ${field.color || 'text-white'} ${field.mono ? 'font-mono bg-zinc-950/60 px-3 py-2 rounded-xl text-xs break-all' : ''}`}>
+                <div key={i} className={`${field.full ? 'col-span-2' : ''} bg-[#0c0c0e] border border-[#1a1a1e] rounded-xl px-3 py-2.5`}>
+                  <div className="text-[10px] text-[#6e6e80] font-medium uppercase tracking-wider mb-0.5">{field.label}</div>
+                  <div className={`text-[13px] font-medium ${field.color || 'text-white'} ${field.mono ? 'font-mono text-[11px] break-all' : ''}`}>
                     {field.value}
                   </div>
                 </div>
@@ -1365,13 +1364,13 @@ export default function WealthTab() {
         </div>
       )}
 
-      {/* ── TOAST ── */}
+      {/* ══════════════════════ TOAST ══════════════════════ */}
       {toast.show && (
-        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-2xl backdrop-blur-xl text-sm font-semibold transition-all ${toast.isError
-            ? 'bg-red-950/90 border-red-800/60 text-red-200'
-            : 'bg-emerald-950/90 border-emerald-800/60 text-emerald-200'
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-2xl backdrop-blur-xl text-[13px] font-medium transition-all ${toast.isError
+          ? 'bg-red-950/90 border-red-800/40 text-red-300'
+          : 'bg-emerald-950/90 border-emerald-800/40 text-emerald-300'
           }`}>
-          <i className={`fa-solid ${toast.isError ? 'fa-circle-exclamation' : 'fa-circle-check'} text-sm`} />
+          <i className={`fa-solid ${toast.isError ? 'fa-circle-exclamation' : 'fa-circle-check'} text-[13px]`} />
           <span>{toast.message}</span>
         </div>
       )}
@@ -1379,4 +1378,3 @@ export default function WealthTab() {
     </div>
   );
 }
-

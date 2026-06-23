@@ -175,7 +175,6 @@ export default function PaymentsTab() {
   const formattedProxy = proxyAddress 
     ? `${proxyAddress.substring(0, 6)}...${proxyAddress.substring(proxyAddress.length - 4)}`
     : '';
-
   const formattedCustody = `${CUSTODY_WALLET_ADDRESS.substring(0, 6)}...${CUSTODY_WALLET_ADDRESS.substring(CUSTODY_WALLET_ADDRESS.length - 4)}`;
 
   // Preview transfer details
@@ -183,112 +182,158 @@ export default function PaymentsTab() {
   const transferFee = amount * 0.05;
   const netReceived = Math.max(0, amount - transferFee);
 
+  const Section = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+    <div className={`bg-[#0c0c0e]/80 backdrop-blur-xl border border-white/5 rounded-2xl p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-purple-500/20 hover:bg-[#111113]/90 hover:shadow-[0_4px_30px_-4px_rgba(168,85,247,0.1)] ${className}`}>
+      {children}
+    </div>
+  );
+
+  const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+    <div className="text-[11px] font-bold text-purple-400 uppercase tracking-[0.15em] mb-1.5 flex items-center gap-2">
+      <div className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_8px_#c084fc]"></div>
+      {children}
+    </div>
+  );
+
+  const SectionTitle = ({ children, icon }: { children: React.ReactNode; icon?: string }) => (
+    <h2 className="text-[18px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400 tracking-tight mb-1 flex items-center gap-2">
+      {icon && <span className="text-base opacity-90 drop-shadow-md">{icon}</span>}
+      {children}
+    </h2>
+  );
+
+  const SectionDesc = ({ children }: { children: React.ReactNode }) => (
+    <p className="text-[13px] text-zinc-400 leading-relaxed mb-6 font-medium">{children}</p>
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-4 sm:gap-6">
-        {/* LEFT: Proxy wallet + Send utility */}
-        <div className="flex flex-col gap-4 sm:gap-6">
+    <div className="space-y-5 max-w-[1200px] mx-auto">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-5">
+        
+        {/* LEFT COLUMN */}
+        <div className="flex flex-col gap-5">
           {/* Utility Portal Account Wallet Card */}
-          <BackgroundGradient containerClassName="w-full" className="bg-zinc-900 border border-zinc-800 rounded-[22px] p-4 sm:p-6 md:p-8 relative overflow-hidden">
-            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Your Wallet</div>
-            <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Utility Portal Account Wallet</h2>
-            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">Your unique EIP-1167 proxy wallet. Funds sent here are automatically routed to the admin custody address and credited to your utility portal balance.</p>
+          <Section className="relative overflow-hidden">
+            <SectionLabel>Your Wallet</SectionLabel>
+            <SectionTitle>Utility Portal Account Wallet</SectionTitle>
+            <SectionDesc>Your unique EIP-1167 proxy wallet. Funds sent here are automatically routed to the admin custody address and credited to your utility portal balance.</SectionDesc>
 
             {!proxyAddress ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-zinc-800/60 border border-zinc-700/40 flex items-center justify-center">
-                  <i className="fa-solid fa-wallet text-zinc-500 text-xl" />
+              <div className="text-center py-10 bg-[#0c0c0e] border border-[#1a1a1e] rounded-xl mt-2">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-[#111113] border border-[#1e1e22] flex items-center justify-center">
+                  <i className="fa-solid fa-wallet text-[#6e6e80] text-lg" />
                 </div>
-                <h4 className="text-white font-bold mb-2">No Utility Wallet Found</h4>
-                <p className="text-sm text-zinc-500 mb-6 max-w-xs mx-auto">Register on the utility portal to generate your unique blockchain deposit address.</p>
-                <button className="px-6 py-2.5 bg-white text-black font-bold rounded-xl text-sm hover:bg-zinc-100 transition-all" onClick={handleCreateProxy} disabled={loading}>
+                <h4 className="text-[15px] text-white font-semibold mb-1.5">No Utility Wallet Found</h4>
+                <p className="text-[12px] text-[#8e8ea0] mb-6 max-w-xs mx-auto px-4">Register on the utility portal to generate your unique blockchain deposit address.</p>
+                <button 
+                  className="px-6 py-2.5 bg-white text-black font-semibold rounded-xl text-sm hover:bg-[#e4e4e7] transition-all disabled:opacity-40" 
+                  onClick={handleCreateProxy} 
+                  disabled={loading}
+                >
                   {loading ? <i className="fa-solid fa-spinner fa-spin" /> : 'Create Utility Address'}
                 </button>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Your Unique Deposit Address</label>
+                  <label className="block text-[11px] font-semibold text-[#6e6e80] mb-2 uppercase tracking-wide">Your Unique Deposit Address</label>
                   <div className="flex gap-2">
-                    <input type="text" value={proxyAddress} readOnly className="flex-1 min-w-0 bg-zinc-950/80 border border-zinc-800/60 rounded-xl px-4 py-3 text-zinc-400 text-xs font-mono focus:outline-none" />
-                    <button className="w-11 h-11 flex items-center justify-center bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/60 rounded-xl text-zinc-300 hover:text-white transition-all text-sm" title="Copy address" onClick={() => copyToClipboard(proxyAddress)}>
+                    <input type="text" value={proxyAddress} readOnly className="flex-1 min-w-0 bg-[#0c0c0e] border border-[#1e1e22] rounded-xl px-4 py-3 text-[#8e8ea0] text-xs font-mono focus:outline-none" />
+                    <button className="w-11 h-11 flex items-center justify-center bg-[#0c0c0e] hover:bg-[#1a1a1e] border border-[#1e1e22] rounded-xl text-[#6e6e80] hover:text-white transition-all text-sm" title="Copy address" onClick={() => copyToClipboard(proxyAddress)}>
                       <i className="fa-solid fa-copy text-xs" />
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Send Direct Deposit</label>
+                  <label className="block text-[11px] font-semibold text-[#6e6e80] mb-2 uppercase tracking-wide">Send Direct Deposit</label>
                   <div className="flex gap-2">
-                    <input type="number" id="deposit-proxy-amount" placeholder="Amount (ARES)" min="1" step="1" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} className="flex-1 bg-zinc-950/80 border border-zinc-800/60 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-zinc-600 placeholder-zinc-600" />
-                    <button className="px-5 py-3 bg-white text-black font-bold rounded-xl text-sm hover:bg-zinc-100 transition-all flex-shrink-0" onClick={handleDepositProxy} disabled={loading}>
+                    <input type="number" placeholder="Amount (ARES)" min="1" step="1" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} className="flex-1 bg-[#0c0c0e] border border-[#1e1e22] rounded-xl px-4 py-3 text-white text-[13px] focus:outline-none focus:border-[#3a3a42] placeholder-[#4e4e5c]" />
+                    <button className="px-5 py-3 bg-white text-black font-semibold rounded-xl text-[13px] hover:bg-[#e4e4e7] transition-all flex-shrink-0 disabled:opacity-40" onClick={handleDepositProxy} disabled={loading}>
                       {loading ? <i className="fa-solid fa-spinner fa-spin" /> : 'Deposit'}
                     </button>
                   </div>
                 </div>
-                <div className="bg-zinc-950/40 rounded-xl border border-zinc-800/30 p-4">
-                  <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide mb-3">Auto-Routing Flow</div>
+                <div className="bg-[#0c0c0e] rounded-xl border border-[#1a1a1e] p-4 mt-2">
+                  <div className="text-[10px] font-semibold text-[#6e6e80] uppercase tracking-wide mb-3">Auto-Routing Flow</div>
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                    <div className="flex-1 bg-zinc-900/60 rounded-lg p-3 text-center border border-zinc-800/30">
-                      <div className="text-[10px] text-zinc-500 mb-1">Your Proxy</div>
-                      <div className="text-xs font-mono text-zinc-300">{formattedProxy}</div>
+                    <div className="flex-1 bg-[#111113] rounded-lg p-3 text-center border border-[#1e1e22]">
+                      <div className="text-[10px] text-[#6e6e80] mb-1 font-medium">Your Proxy</div>
+                      <div className="text-xs font-mono text-[#8e8ea0]">{formattedProxy}</div>
                     </div>
-                    <i className="fa-solid fa-angles-right text-zinc-600" />
-                    <div className="flex-1 bg-zinc-900/60 rounded-lg p-3 text-center border border-zinc-800/30">
-                      <div className="text-[10px] text-zinc-500 mb-1">Admin Custodial</div>
-                      <div className="text-xs font-mono text-zinc-300">{formattedCustody}</div>
+                    <i className="fa-solid fa-angles-right text-[#4e4e5c] text-xs" />
+                    <div className="flex-1 bg-[#111113] rounded-lg p-3 text-center border border-[#1e1e22]">
+                      <div className="text-[10px] text-[#6e6e80] mb-1 font-medium">Admin Custodial</div>
+                      <div className="text-xs font-mono text-[#8e8ea0]">{formattedCustody}</div>
                     </div>
                   </div>
-                  <div className="text-[10px] text-zinc-600 mt-2 text-center">Balance: {custodianBalance.toFixed(2)} ARES</div>
+                  <div className="text-[10px] text-[#6e6e80] mt-3 text-center font-medium">Balance: <span className="text-white">{custodianBalance.toFixed(2)}</span> ARES</div>
                 </div>
               </div>
             )}
-          </BackgroundGradient>
+          </Section>
 
           {/* Send Utility Credit - only if proxyAddress */}
-          {proxyAddress ? (
-              <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Transfer</div>
-              <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Send Utility Credit</h2>
-              <p className="text-sm text-zinc-400 mb-6 leading-relaxed">Transfer available utility portal balance to another user instantly. A 5.0% fee is deducted from the transfer amount.</p>
+          {proxyAddress && (
+            <Section>
+              <SectionLabel>Transfer</SectionLabel>
+              <SectionTitle>Send Utility Credit</SectionTitle>
+              <SectionDesc>Send ARES from your proxy balance directly to another user's wallet. A 5% network transfer fee applies.</SectionDesc>
+              
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Recipient Address</label>
-                  <input type="text" id="transfer-recipient" placeholder="Enter 0x... address" value={recipient} onChange={(e) => setRecipient(e.target.value)} className="w-full bg-zinc-950/80 border border-zinc-800/60 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-zinc-600 placeholder-zinc-600 transition-all" />
+                  <label className="block text-[11px] font-semibold text-[#6e6e80] mb-2 uppercase tracking-wide">Recipient Address</label>
+                  <input type="text" placeholder="0x..." value={recipient} onChange={(e) => setRecipient(e.target.value)} className="w-full bg-[#0c0c0e] border border-[#1e1e22] rounded-xl px-4 py-3 text-white text-[13px] font-mono focus:outline-none focus:border-[#3a3a42] placeholder-[#4e4e5c]" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-500 mb-2 uppercase tracking-wide">Amount to Send</label>
-                  <div className="relative">
-                    <input type="number" id="transfer-amount" placeholder="Amount (ARES)" min="1" step="1" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} className="w-full bg-zinc-950/80 border border-zinc-800/60 rounded-xl px-4 py-3.5 pr-16 text-white text-sm focus:outline-none focus:border-zinc-600 placeholder-zinc-600 transition-all" />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-500">ARES</span>
-                  </div>
-                  <p className="text-[11px] text-zinc-600 mt-2">5% fee: {transferFee.toFixed(2)} ARES. Recipient receives: {netReceived.toFixed(2)} ARES.</p>
+                  <label className="block text-[11px] font-semibold text-[#6e6e80] mb-2 uppercase tracking-wide">Amount (ARES)</label>
+                  <input type="number" placeholder="0.0" min="0" step="1" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)} className="w-full bg-[#0c0c0e] border border-[#1e1e22] rounded-xl px-4 py-3 text-white text-[13px] focus:outline-none focus:border-[#3a3a42] placeholder-[#4e4e5c]" />
                 </div>
-                <button className="w-full py-3.5 bg-white text-black font-bold rounded-xl text-sm hover:bg-zinc-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2" onClick={handleTransfer} disabled={loading}>
-                  {loading ? <><i className="fa-solid fa-spinner fa-spin" /> Processing...</> : '⚡ Send Instantly'}
+                
+                {amount > 0 && (
+                  <div className="bg-[#0c0c0e] rounded-xl p-3 border border-[#1a1a1e] space-y-1.5 my-2">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-[#6e6e80]">Transfer Amount:</span>
+                      <span className="text-[#8e8ea0]">{amount.toFixed(2)} ARES</span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-[#6e6e80]">Network Fee (5%):</span>
+                      <span className="text-red-400">-{transferFee.toFixed(2)} ARES</span>
+                    </div>
+                    <div className="h-px bg-[#1e1e22] my-1" />
+                    <div className="flex justify-between text-[12px] font-bold">
+                      <span className="text-[#8e8ea0]">Recipient Gets:</span>
+                      <span className="text-emerald-400">{netReceived.toFixed(2)} ARES</span>
+                    </div>
+                  </div>
+                )}
+
+                <button className="w-full py-3 mt-2 bg-white text-black font-semibold rounded-xl text-[13px] hover:bg-[#e4e4e7] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2" onClick={handleTransfer} disabled={loading || amount <= 0 || !recipient}>
+                  {loading ? <i className="fa-solid fa-spinner fa-spin" /> : <><i className="fa-regular fa-paper-plane" /> Send Funds</>}
                 </button>
               </div>
-            </div>
-          ) : null}
+            </Section>
+          )}
         </div>
 
-        {/* RIGHT: Ledger & transactions */}
-        <div>
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
-            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Balance</div>
-            <h2 className="text-xl font-bold text-white tracking-tight mb-6">Utility Credit &amp; Transactions</h2>
-
-            {/* Balance display */}
-            <div className="bg-zinc-950/60 border border-zinc-800/40 rounded-xl p-5 mb-6 text-center">
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Available Utility Balance</div>
-              <div className="text-3xl font-black text-white tracking-tight">{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-              <div className="text-xs text-zinc-500 font-mono mt-1">ARES</div>
+        {/* RIGHT COLUMN */}
+        <div className="flex flex-col gap-5">
+          
+          <Section>
+            <SectionLabel>Balance</SectionLabel>
+            <SectionTitle>Available Credits</SectionTitle>
+            
+            <div className="bg-[#0c0c0e] border border-[#1a1a1e] rounded-xl p-5 mb-6 text-center">
+              <div className="text-[10px] font-semibold text-[#6e6e80] uppercase tracking-wide mb-2">Available Utility Balance</div>
+              <div className="text-3xl font-semibold text-white tracking-tight font-mono">{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+              <div className="text-[12px] text-[#6e6e80] mt-1">ARES</div>
             </div>
 
-            {/* Transaction history */}
-            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Transaction History</div>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+            <SectionLabel>History</SectionLabel>
+            <div className="text-[14px] font-semibold text-white mb-3">Transaction History</div>
+            
+            <div className="space-y-2 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
               {transactions.length === 0 ? (
-                <div className="py-8 text-center text-zinc-600 text-sm">No transactions yet.</div>
+                <div className="py-8 text-center text-[#4e4e5c] text-[13px] border border-dashed border-[#1e1e22] rounded-xl">No transactions yet.</div>
               ) : (
                 <AnimatePresence>
                   {transactions.map((tx, idx) => {
@@ -296,17 +341,18 @@ export default function PaymentsTab() {
                     return (
                       <motion.div
                         key={tx.id}
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.05 }}
-                        className="flex items-center justify-between p-3.5 bg-zinc-950/40 rounded-xl border border-zinc-800/30 hover:border-zinc-800/60 transition-all"
+                        transition={{ delay: Math.min(idx * 0.05, 0.5) }}
+                        className="flex items-center justify-between p-3.5 bg-[#0c0c0e] rounded-xl border border-[#1a1a1e] hover:border-[#2a2a30] transition-colors group"
                       >
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-bold text-white">{tx.type}</div>
-                          <div className="text-[10px] text-zinc-500 mt-0.5 truncate">{tx.description} • {new Date(tx.timestamp).toLocaleString()}</div>
+                        <div className="flex-1 min-w-0 pr-3">
+                          <div className="text-[11px] font-bold text-white mb-1">{tx.type}</div>
+                          <div className="text-[10px] text-[#6e6e80] truncate">{tx.description}</div>
+                          <div className="text-[9px] text-[#4e4e5c] mt-0.5">{new Date(tx.timestamp).toLocaleString()}</div>
                         </div>
-                        <span className={`text-xs font-black font-mono ml-3 flex-shrink-0 ${isReceived ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {isReceived ? '+' : '-'}{isReceived ? tx.netAmount?.toFixed(2) : tx.amount?.toFixed(2)} ARES
+                        <span className={`text-[12px] font-semibold font-mono flex-shrink-0 px-2.5 py-1 rounded-md bg-[#111113] border border-[#1e1e22] ${isReceived ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {isReceived ? '+' : '-'}{isReceived ? tx.netAmount?.toFixed(2) : tx.amount?.toFixed(2)}
                         </span>
                       </motion.div>
                     );
@@ -314,7 +360,7 @@ export default function PaymentsTab() {
                 </AnimatePresence>
               )}
             </div>
-          </div>
+          </Section>
         </div>
       </div>
     </div>

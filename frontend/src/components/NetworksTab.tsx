@@ -91,211 +91,206 @@ export default function NetworksTab() {
     }
   };
 
+  // ─── Shared Section Helpers ───
+  const Section = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+    <div className={`bg-[#0c0c0e]/80 backdrop-blur-xl border border-white/5 rounded-2xl p-5 sm:p-6 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300 hover:border-emerald-500/20 hover:bg-[#111113]/90 hover:shadow-[0_4px_30px_-4px_rgba(16,185,129,0.1)] ${className}`}>
+      {children}
+    </div>
+  );
+
+  const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+    <div className="text-[11px] font-bold text-emerald-400 uppercase tracking-[0.15em] mb-1.5 flex items-center gap-2">
+      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></div>
+      {children}
+    </div>
+  );
+
+  const SectionTitle = ({ children, icon }: { children: React.ReactNode; icon?: string }) => (
+    <h2 className="text-[18px] font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400 tracking-tight mb-1 flex items-center gap-2">
+      {icon && <span className="text-base opacity-90 drop-shadow-md">{icon}</span>}
+      {children}
+    </h2>
+  );
+
+  const SectionDesc = ({ children }: { children: React.ReactNode }) => (
+    <p className="text-[13px] text-zinc-400 leading-relaxed mb-6 font-medium">{children}</p>
+  );
+
+  const StatCard = ({ label, value, color = 'text-white', sub }: { label: string; value: string | number; color?: string; sub?: string }) => (
+    <div className="bg-black/40 rounded-xl px-4 py-3.5 border border-white/5 hover:border-white/10 transition-colors shadow-inner">
+      <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1.5">{label}</div>
+      <div className={`text-[16px] font-bold ${color} tabular-nums tracking-tight`}>{value}</div>
+      {sub && <div className="text-[11px] text-zinc-500 mt-1 font-medium">{sub}</div>}
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 max-w-[1200px] mx-auto">
 
       {/* ── Toast Notification ── */}
       {toast.show && (
-        <div
-          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl border text-sm font-medium transition-all duration-300 ${
-            toast.isError
-              ? 'bg-red-950/90 border-red-800/60 text-red-200'
-              : 'bg-zinc-900 border-zinc-700/60 text-zinc-100'
-          }`}
-        >
-          <i
-            className={
-              toast.isError
-                ? 'fa-solid fa-circle-exclamation text-red-400'
-                : 'fa-solid fa-circle-check text-emerald-400'
-            }
-          />
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-2xl backdrop-blur-xl text-[13px] font-medium transition-all ${toast.isError
+            ? 'bg-red-950/90 border-red-800/40 text-red-300'
+            : 'bg-emerald-950/90 border-emerald-800/40 text-emerald-300'
+          }`}>
+          <i className={`fa-solid ${toast.isError ? 'fa-circle-exclamation' : 'fa-circle-check'} text-[13px]`} />
           <span>{toast.message}</span>
         </div>
       )}
 
       {/* ── Top Stats Grid ── */}
-      <BentoGrid className="grid-cols-1 sm:grid-cols-3 mb-4 sm:mb-6 max-w-none">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         
         {/* Card 1 — Available Matching Earnings */}
-        <BentoGridItem
-          className="flex flex-col justify-between"
-          header={<p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Available Matching Earnings</p>}
-          title={
-            <div>
-              <div className="text-2xl font-black text-white">
-                {stats.availableEarned.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </div>
-              <p className="text-xs text-zinc-500 font-mono mt-1">ARES</p>
+        <Section className="flex flex-col justify-between">
+          <div>
+            <SectionLabel>Available Matching Earnings</SectionLabel>
+            <div className="text-2xl font-semibold text-white mt-2 font-mono">
+              {stats.availableEarned.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })} <span className="text-[12px] text-[#6e6e80] ml-1">ARES</span>
             </div>
-          }
-          description={
-            <div>
-              <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
-                Earned when downlines claimed their yield. Direct-to-wallet transfer.
-              </p>
-              <button
-                onClick={handleRedeem}
-                disabled={redeemLoading || stats.availableEarned <= 0}
-                className="mt-4 w-full py-2.5 bg-white text-black font-bold rounded-xl text-sm hover:bg-zinc-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {redeemLoading ? (
-                  <><i className="fa-solid fa-circle-notch fa-spin" /> Redeeming...</>
-                ) : (
-                  <><i className="fa-solid fa-download" /> Redeem</>
-                )}
-              </button>
-            </div>
-          }
-        />
+            <p className="text-[13px] text-[#8e8ea0] mt-3 leading-relaxed">
+              Earned when downlines claimed their yield. Direct-to-wallet transfer.
+            </p>
+          </div>
+          <button
+            onClick={handleRedeem}
+            disabled={redeemLoading || stats.availableEarned <= 0}
+            className="mt-6 w-full py-2.5 bg-white text-black font-semibold rounded-xl text-sm hover:bg-[#e4e4e7] active:scale-[0.98] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {redeemLoading ? (
+              <><i className="fa-solid fa-spinner fa-spin" /> Redeeming...</>
+            ) : (
+              <><i className="fa-solid fa-download" /> Redeem to Wallet</>
+            )}
+          </button>
+        </Section>
 
         {/* Card 2 — Total Earned (Lifetime) */}
-        <BentoGridItem
-          className="flex flex-col justify-between"
-          header={<p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Total Earned (Lifetime)</p>}
-          title={
-            <div>
-              <div className="text-2xl font-black text-emerald-400">
-                {stats.totalEarned.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </div>
-              <p className="text-xs text-zinc-500 font-mono mt-1">ARES</p>
+        <Section className="flex flex-col justify-between">
+          <div>
+            <SectionLabel>Total Earned (Lifetime)</SectionLabel>
+            <div className="text-2xl font-semibold text-emerald-400 mt-2 font-mono">
+              {stats.totalEarned.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })} <span className="text-[12px] text-[#6e6e80] ml-1">ARES</span>
             </div>
-          }
-          description={
-            <div>
-              <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
-                Total network-based commission accrued from your downline tree.
-              </p>
-              <span className="mt-4 inline-block text-[11px] text-zinc-500 font-mono bg-zinc-950/60 border border-zinc-800/40 px-3 py-1 rounded-full">
-                Directly from downlines
-              </span>
-            </div>
-          }
-        />
+            <p className="text-[13px] text-[#8e8ea0] mt-3 leading-relaxed">
+              Total network-based commission accrued from your downline tree.
+            </p>
+          </div>
+          <div className="mt-6">
+            <span className="inline-block text-[11px] text-[#6e6e80] font-mono bg-[#0c0c0e] border border-[#1e1e22] px-2.5 py-1.5 rounded-lg">
+              Directly from downlines
+            </span>
+          </div>
+        </Section>
 
         {/* Card 3 — Total Redeemed */}
-        <BentoGridItem
-          className="flex flex-col justify-between"
-          header={<p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Total Redeemed</p>}
-          title={
-            <div>
-              <div className="text-2xl font-black text-zinc-400">
-                {stats.claimedEarned.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </div>
-              <p className="text-xs text-zinc-500 font-mono mt-1">ARES</p>
+        <Section className="flex flex-col justify-between">
+          <div>
+            <SectionLabel>Total Redeemed</SectionLabel>
+            <div className="text-2xl font-semibold text-[#8e8ea0] mt-2 font-mono">
+              {stats.claimedEarned.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })} <span className="text-[12px] text-[#6e6e80] ml-1">ARES</span>
             </div>
-          }
-          description={
-            <div>
-              <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
-                Matching commissions successfully withdrawn to your primary wallet.
-              </p>
-              <span className="mt-4 inline-block text-[11px] text-zinc-500 font-mono bg-zinc-950/60 border border-zinc-800/40 px-3 py-1 rounded-full">
-                Transaction fees: 0%
-              </span>
-            </div>
-          }
-        />
+            <p className="text-[13px] text-[#8e8ea0] mt-3 leading-relaxed">
+              Matching commissions successfully withdrawn to your primary wallet.
+            </p>
+          </div>
+          <div className="mt-6">
+            <span className="inline-block text-[11px] text-[#6e6e80] font-mono bg-[#0c0c0e] border border-[#1e1e22] px-2.5 py-1.5 rounded-lg">
+              Transaction fees: 0%
+            </span>
+          </div>
+        </Section>
 
-      </BentoGrid>
+      </div>
 
       {/* ── Earnings History Card ── */}
-      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8">
-
+      <Section>
         {/* Header row */}
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex items-start justify-between mb-5">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-1">
-              Commissions History
-            </p>
-            <h3 className="text-xl font-bold text-white tracking-tight mb-1.5">
-              Downline Claims &amp; Matching Commissions
-            </h3>
-            <p className="text-sm text-zinc-400 leading-relaxed">
-              Live feed of matching rewards generated when members of your downline claim yield.
-            </p>
+            <SectionLabel>Commissions History</SectionLabel>
+            <SectionTitle icon="📜">Downline Claims & Matching Commissions</SectionTitle>
+            <SectionDesc>Live feed of matching rewards generated when members of your downline claim yield.</SectionDesc>
           </div>
           <button
             onClick={loadNetworkData}
             disabled={loading}
-            className="flex-shrink-0 ml-4 bg-zinc-950/60 border border-zinc-800/40 text-zinc-400 hover:text-white hover:border-zinc-700/50 rounded-xl p-2.5 text-xs transition-all disabled:opacity-50"
+            className="flex-shrink-0 ml-4 bg-[#0c0c0e] border border-[#1e1e22] text-[#6e6e80] hover:text-white hover:border-[#3a3a42] rounded-xl w-10 h-10 flex items-center justify-center transition-all disabled:opacity-40"
             title="Refresh network data"
           >
             <i className={`fa-solid fa-arrows-rotate ${loading ? 'fa-spin' : ''}`} />
           </button>
         </div>
 
-        <div className="h-px bg-zinc-800/60 mb-6" />
-
-        <div className="w-full mt-2">
+        <div className="w-full">
           {earnings.length === 0 ? (
-            <div className="py-10 text-center text-zinc-600 text-sm border border-zinc-800/40 rounded-xl mt-4">
+            <div className="py-10 text-center text-[#4e4e5c] text-sm border border-dashed border-[#1e1e22] rounded-xl">
               No matching commissions generated yet. When your downline claims yield, it will appear here.
             </div>
           ) : (
-            <HoverEffect className="py-2" items={earnings.map((e) => {
-              const abbrFrom = `${e.fromAddress.substring(0, 6)}...${e.fromAddress.substring(38)}`;
-              return {
-                title: `+${e.amount.toFixed(4)} ARES`,
-                description: new Date(e.timestamp).toLocaleString(),
-                content: (
-                  <div className="flex flex-col gap-2 relative z-50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="bg-zinc-900 text-zinc-400 text-[10px] font-bold px-2 py-0.5 rounded border border-zinc-800/40 mr-2">
-                          Level {e.level}
-                        </span>
-                        <span className="font-bold text-white text-base">+{e.amount.toFixed(4)} ARES</span>
+            <div className="space-y-2">
+              {earnings.map((e, index) => {
+                const abbrFrom = `${e.fromAddress.substring(0, 6)}...${e.fromAddress.substring(38)}`;
+                return (
+                  <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#0c0c0e] border border-[#1a1a1e] rounded-xl px-4 py-3 group hover:border-[#2a2a30] transition-colors">
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 flex-shrink-0">
+                        <i className="fa-solid fa-arrow-down text-sm" />
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      <div>
+                        <div className="text-[14px] font-semibold text-white">+{e.amount.toFixed(4)} ARES</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[11px] font-mono text-[#6e6e80]">From: <span className="text-cyan-400/80">{abbrFrom}</span></span>
+                          <span className="w-1 h-1 rounded-full bg-[#1e1e22]" />
+                          <span className="text-[11px] font-semibold text-[#8e8ea0]">Lvl {e.level}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#1e1e22]">
+                      <div className="text-left sm:text-right">
+                        <div className="text-[11px] text-[#6e6e80]">{new Date(e.timestamp).toLocaleString()}</div>
+                        {e.txHash && (
+                          <a
+                            href={`http://localhost:9081/tx/${e.txHash}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-block mt-0.5 font-mono text-[10px] text-[#6e6e80] hover:text-cyan-400 transition-colors"
+                          >
+                            Tx: {e.txHash.substring(0, 6)}…
+                          </a>
+                        )}
+                      </div>
+                      
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md border flex-shrink-0 ${
                         e.isClaimed
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                          : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                       }`}>
                         {e.isClaimed ? 'Redeemed' : 'Unclaimed'}
                       </span>
                     </div>
-                    
-                    <div className="text-xs text-zinc-500 mt-2">
-                      <span className="text-zinc-600 font-semibold">From: </span>
-                      <span className="font-mono text-blue-400">{abbrFrom}</span>
-                    </div>
-                    <div className="text-xs text-zinc-500">
-                      <span className="text-zinc-600 font-semibold">Date: </span>
-                      {new Date(e.timestamp).toLocaleString()}
-                    </div>
-                    
-                    {e.txHash && (
-                      <div className="pt-2 border-t border-zinc-800/40 mt-2">
-                        <span className="text-zinc-600 font-semibold text-[11px]">Tx: </span>
-                        <a
-                          href="http://localhost"
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-mono text-[11px] text-blue-400 hover:text-blue-300 hover:underline transition-colors"
-                        >
-                          {e.txHash.substring(0, 6)}…{e.txHash.substring(60)}
-                        </a>
-                      </div>
-                    )}
+
                   </div>
-                )
-              }
-            })} />
+                );
+              })}
+            </div>
           )}
         </div>
 
-      </div>
+      </Section>
 
     </div>
   );
 }
+
