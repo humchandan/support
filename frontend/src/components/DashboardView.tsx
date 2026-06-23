@@ -8,6 +8,8 @@ import WealthTab from './WealthTab';
 import PaymentsTab from './PaymentsTab';
 import ProfileTab from './ProfileTab';
 import NetworksTab from './NetworksTab';
+import { motion } from 'framer-motion';
+import { BackgroundGradient } from './ui/background-gradient';
 
 const NAV_ITEMS = [
   { id: 'wealth', label: 'Wealth & Staking', icon: '📈', desc: 'Plans & yield' },
@@ -47,16 +49,18 @@ export default function DashboardView() {
   const SidebarContent = ({ onClose }: { onClose?: () => void }) => (
     <div className="flex flex-col h-full">
       {/* Brand */}
-      <div className="px-6 py-5 border-b border-zinc-800/60">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg overflow-hidden bg-zinc-900 flex items-center justify-center">
-            <img src="/logo.png" alt="Aries Logo" className="w-full h-full object-contain" />
+      <div className="px-6 py-6 border-b border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent relative overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-24 h-24 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="w-10 h-10 rounded-xl overflow-hidden bg-black/50 border border-white/10 flex items-center justify-center p-1.5 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            <img src="/logo.png" alt="Aries Logo" className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
           </div>
           <div>
-            <div className="text-sm font-bold text-white tracking-tight leading-tight">
-              Aries<span className="text-cyan-400">.</span>Portal
+            <div className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400 tracking-tight leading-tight flex items-center">
+              Aries<span className="text-cyan-400 text-xl font-bold leading-none -mt-1 relative"><span className="absolute -inset-1 bg-cyan-400/50 blur-sm rounded-full"></span>.</span>Portal
             </div>
-            <div className="text-[10px] text-zinc-500 font-mono">ChainID 232425</div>
+            <div className="text-[10px] text-zinc-500 font-mono tracking-widest uppercase mt-0.5">ChainID 232425</div>
           </div>
         </div>
       </div>
@@ -66,28 +70,40 @@ export default function DashboardView() {
         <div className="mb-2 px-3 text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
           Main Menu
         </div>
-        <nav className="flex flex-col gap-0.5">
+        <nav className="flex flex-col gap-1.5">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
               onClick={() => { setActiveTab(item.id); onClose?.(); }}
-              className={`group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-left transition-all duration-200 ${
+              className={`relative group flex items-center gap-3 w-full px-3 py-3 rounded-2xl text-left transition-all duration-300 ${
                 activeTab === item.id
-                  ? 'bg-white text-black shadow-md shadow-white/10'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                  ? 'text-white'
+                  : 'text-zinc-400 hover:text-white'
               }`}
             >
-              <span className="text-base leading-none">{item.icon}</span>
-              <div className="flex-1 min-w-0">
-                <div className={`text-sm font-semibold leading-tight ${activeTab === item.id ? 'text-black' : ''}`}>
+              {activeTab === item.id && (
+                <motion.div
+                  layoutId="activeTabSidebar"
+                  className="absolute inset-0 bg-white/[0.08] border border-white/10 rounded-2xl shadow-[inset_0_0_12px_rgba(255,255,255,0.03)]"
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                />
+              )}
+              <span className={`relative z-10 text-lg transition-transform duration-300 ${activeTab === item.id ? 'scale-110 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]' : 'group-hover:scale-110 grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100'}`}>
+                {item.icon}
+              </span>
+              <div className="relative z-10 flex-1 min-w-0">
+                <div className={`text-sm font-bold leading-tight tracking-wide transition-colors ${activeTab === item.id ? 'text-white drop-shadow-sm' : ''}`}>
                   {item.label}
                 </div>
-                <div className={`text-[10px] leading-tight mt-0.5 ${activeTab === item.id ? 'text-zinc-500' : 'text-zinc-600 group-hover:text-zinc-500'}`}>
+                <div className={`text-[10px] leading-tight mt-0.5 transition-colors ${activeTab === item.id ? 'text-zinc-300' : 'text-zinc-600 group-hover:text-zinc-400'}`}>
                   {item.desc}
                 </div>
               </div>
               {activeTab === item.id && (
-                <div className="w-1.5 h-1.5 rounded-full bg-black/40 flex-shrink-0" />
+                <motion.div 
+                  layoutId="activeTabIndicator"
+                  className="relative z-10 w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] flex-shrink-0" 
+                />
               )}
             </button>
           ))}
@@ -123,36 +139,42 @@ export default function DashboardView() {
       </div>
 
       {/* User section */}
-      <div className="px-3 py-4 border-t border-zinc-800/60 space-y-3">
+      <div className="px-4 py-5 border-t border-white/5 space-y-4 bg-gradient-to-t from-white/[0.02] to-transparent">
         {/* Network status pill */}
-        <div className="flex items-center justify-between px-3 py-2 bg-zinc-900/60 rounded-xl border border-zinc-800/40">
+        <div className="flex items-center justify-between px-3 py-2.5 bg-black/40 rounded-xl border border-white/5 shadow-inner">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse flex-shrink-0" />
-            <span className="text-xs text-zinc-400 font-medium">Node Live</span>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-xs text-zinc-300 font-semibold tracking-wide">Node Live</span>
           </div>
-          <span className="text-[10px] font-mono text-zinc-600">100% uptime</span>
+          <span className="text-[10px] font-bold tracking-widest text-emerald-500/70 uppercase">100% Sync</span>
         </div>
 
-        {/* User card */}
-        <div className="flex items-center gap-3 px-3 py-2.5 bg-zinc-900/40 rounded-xl border border-zinc-800/40">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 border border-zinc-700 flex items-center justify-center flex-shrink-0">
-            <span className="text-sm">👤</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-xs font-bold text-white truncate leading-tight">
-              {userProfile?.name || 'Ares Member'}
+        {/* User card with subtle gradient background */}
+        <div className="relative group p-[1px] rounded-2xl bg-gradient-to-b from-white/10 to-transparent">
+          <div className="flex items-center gap-3 px-3 py-3 bg-black/60 backdrop-blur-md rounded-2xl relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800 to-black border border-white/10 flex items-center justify-center flex-shrink-0 shadow-lg relative z-10">
+              <span className="text-base drop-shadow-md">👤</span>
             </div>
-            <div className="text-[10px] text-zinc-500 truncate font-mono leading-tight mt-0.5">
-              {formattedAddress}
+            <div className="flex-1 min-w-0 relative z-10">
+              <div className="text-sm font-black text-white truncate tracking-tight">
+                {userProfile?.name || 'Ares Member'}
+              </div>
+              <div className="text-[10px] text-zinc-400 truncate font-mono tracking-widest mt-0.5">
+                {formattedAddress}
+              </div>
             </div>
           </div>
         </div>
 
         <button
           onClick={disconnectWallet}
-          className="w-full flex items-center justify-center gap-2 py-2.5 bg-zinc-900/60 hover:bg-red-950/40 text-zinc-500 hover:text-red-400 text-xs font-semibold rounded-xl border border-zinc-800/40 hover:border-red-900/40 transition-all duration-200"
+          className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/5 hover:bg-red-500/10 text-red-400/80 hover:text-red-400 text-xs font-bold uppercase tracking-widest rounded-xl border border-red-500/10 hover:border-red-500/30 transition-all duration-300"
         >
-          <span className="text-xs">⏻</span> Disconnect Wallet
+          <span className="text-xs">⏻</span> Disconnect
         </button>
       </div>
     </div>
@@ -210,78 +232,98 @@ export default function DashboardView() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 px-5 py-6 sm:px-8 sm:py-8 xl:px-10 xl:py-10 max-w-screen-xl w-full mx-auto">
+        <main className="flex-1 px-3 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 xl:px-10 xl:py-10 max-w-screen-xl w-full mx-auto">
 
           {/* ── TOP STATS BAR ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
 
             {/* Wallet Balance */}
-            <div className="sm:col-span-2 group relative bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 overflow-hidden hover:border-zinc-700/60 transition-all duration-300">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/[0.02] rounded-full blur-2xl -translate-y-8 translate-x-8 pointer-events-none" />
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Connected Wallet Balance</div>
-              <div className="flex items-baseline gap-2 mb-3">
-                <span className="text-3xl xl:text-4xl font-black text-white tracking-tight">
-                  {ethBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
-                </span>
-                <span className="text-sm font-bold text-zinc-500 font-mono">ARES</span>
-              </div>
-              <div className="inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 bg-zinc-950/60 px-2.5 py-1.5 rounded-lg border border-zinc-800/40 hover:text-zinc-300 hover:border-zinc-700/40 transition-all cursor-pointer select-all max-w-full overflow-hidden">
-                <span className="truncate">{userAddress || '—'}</span>
+            <div className="bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:bg-white/[0.02] transition-colors relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative z-10">
+                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Connected Balance</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-white tracking-tight drop-shadow-md">
+                    {ethBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                  </span>
+                  <span className="text-xs font-bold text-zinc-500 font-mono">ARES</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 text-[10px] font-mono text-zinc-400 bg-black/40 px-2.5 py-1 rounded border border-white/5 mt-3 shadow-inner">
+                  <span className="truncate">{userAddress || '—'}</span>
+                </div>
               </div>
             </div>
 
             {/* Network Node */}
-            <div className="group relative bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 overflow-hidden hover:border-zinc-700/60 transition-all duration-300">
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Network Node</div>
-              <div className="text-base font-bold text-white mb-4 leading-tight">Aries Chain Support</div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse flex-shrink-0" />
-                <span className="text-xs text-zinc-400 font-medium">Node Sync Live</span>
+            <div className="bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:bg-white/[0.02] transition-colors relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative z-10 flex flex-col justify-between h-full">
+                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Network Node</div>
+                <div className="text-lg font-bold text-white leading-tight">Aries Chain Support</div>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-xs text-zinc-300 font-semibold tracking-wide">Node Sync Live</span>
+                  </div>
+                  <div className="mt-1 text-[10px] font-mono text-zinc-600 tracking-widest uppercase">ChainID 232425 • 100% uptime</div>
+                </div>
               </div>
-              <div className="mt-2 text-[10px] font-mono text-zinc-600">ChainID 232425 • 100% uptime</div>
             </div>
 
             {/* Accrued Yield */}
-            <div className="group relative bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 overflow-hidden hover:border-zinc-700/60 transition-all duration-300">
-              <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Your Rank</div>
-              <div className="text-xl font-black text-white mb-1">{userProfile?.rank || 'Default'}</div>
-              <div className="text-xs text-zinc-500">
-                {userProfile?.selfInvestment
-                  ? `${Number(userProfile.selfInvestment).toLocaleString()} ARES staked`
-                  : 'No plans active'}
-              </div>
-              <div className="mt-3 flex items-center gap-1.5">
-                <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full" style={{ width: '35%' }} />
+            <div className="bg-zinc-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-5 hover:bg-white/[0.02] transition-colors relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="relative z-10 flex flex-col justify-between h-full">
+                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Your Rank</div>
+                <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+                  {userProfile?.rank || 'Default'}
                 </div>
-                <span className="text-[10px] text-zinc-600 font-mono">Lv 1</span>
+                <div className="mt-2">
+                  <div className="text-xs text-zinc-400 font-semibold">
+                    {userProfile?.selfInvestment
+                      ? `${Number(userProfile.selfInvestment).toLocaleString()} ARES staked`
+                      : 'No plans active'}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-black/60 rounded-full overflow-hidden shadow-inner border border-white/5">
+                      <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full w-[35%] relative">
+                        <div className="absolute inset-0 bg-white/20 w-full animate-pulse" />
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 font-mono font-bold">Lv 1</span>
+                  </div>
+                </div>
               </div>
             </div>
 
           </div>
 
           {/* ── PAGE HEADER ── */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
             <div>
-              <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight flex items-center gap-2">
                 <span>{activeNavItem?.icon}</span>
                 {activeNavItem?.label}
               </h1>
-              <p className="text-sm text-zinc-500 mt-0.5">{activeNavItem?.desc}</p>
+              <p className="text-xs sm:text-sm text-zinc-500 mt-0.5">{activeNavItem?.desc}</p>
             </div>
             {/* Mobile tab pills */}
-            <div className="flex lg:hidden gap-1 bg-zinc-900/60 border border-zinc-800/40 rounded-xl p-1">
-              {NAV_ITEMS.slice(0, 3).map(item => (
+            <div className="flex lg:hidden gap-1 bg-zinc-900/60 border border-zinc-800/40 rounded-xl p-1 self-start sm:self-auto overflow-x-auto">
+              {NAV_ITEMS.map(item => (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  className={`px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1 ${
                     activeTab === item.id
                       ? 'bg-white text-black'
                       : 'text-zinc-500 hover:text-white'
                   }`}
                 >
-                  {item.icon}
+                  <span>{item.icon}</span>
+                  <span className="hidden sm:inline">{item.label}</span>
                 </button>
               ))}
             </div>

@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useWeb3 } from '../hooks/useWeb3';
 import { ethers } from 'ethers';
 import { waitForTransactionReceiptWithRetry } from '../lib/txWaiter';
+import { BackgroundGradient } from './ui/background-gradient';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function PaymentsTab() {
   const { userAddress, jwtToken, userProfile, provider, signer, loadProfile } = useWeb3();
@@ -183,11 +185,11 @@ export default function PaymentsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-4 sm:gap-6">
         {/* LEFT: Proxy wallet + Send utility */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-6">
           {/* Utility Portal Account Wallet Card */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
+          <BackgroundGradient containerClassName="w-full" className="bg-zinc-900 border border-zinc-800 rounded-[22px] p-4 sm:p-6 md:p-8 relative overflow-hidden">
             <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Your Wallet</div>
             <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Utility Portal Account Wallet</h2>
             <p className="text-sm text-zinc-400 mb-6 leading-relaxed">Your unique EIP-1167 proxy wallet. Funds sent here are automatically routed to the admin custody address and credited to your utility portal balance.</p>
@@ -225,7 +227,7 @@ export default function PaymentsTab() {
                 </div>
                 <div className="bg-zinc-950/40 rounded-xl border border-zinc-800/30 p-4">
                   <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide mb-3">Auto-Routing Flow</div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                     <div className="flex-1 bg-zinc-900/60 rounded-lg p-3 text-center border border-zinc-800/30">
                       <div className="text-[10px] text-zinc-500 mb-1">Your Proxy</div>
                       <div className="text-xs font-mono text-zinc-300">{formattedProxy}</div>
@@ -240,11 +242,11 @@ export default function PaymentsTab() {
                 </div>
               </div>
             )}
-          </div>
+          </BackgroundGradient>
 
           {/* Send Utility Credit - only if proxyAddress */}
           {proxyAddress ? (
-            <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
+              <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
               <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Transfer</div>
               <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Send Utility Credit</h2>
               <p className="text-sm text-zinc-400 mb-6 leading-relaxed">Transfer available utility portal balance to another user instantly. A 5.0% fee is deducted from the transfer amount.</p>
@@ -271,7 +273,7 @@ export default function PaymentsTab() {
 
         {/* RIGHT: Ledger & transactions */}
         <div>
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
+          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
             <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Balance</div>
             <h2 className="text-xl font-bold text-white tracking-tight mb-6">Utility Credit &amp; Transactions</h2>
 
@@ -288,20 +290,28 @@ export default function PaymentsTab() {
               {transactions.length === 0 ? (
                 <div className="py-8 text-center text-zinc-600 text-sm">No transactions yet.</div>
               ) : (
-                transactions.map(tx => {
-                  const isReceived = tx.type === 'DEPOSIT' || tx.type === 'TRANSFER_IN' || tx.type === 'CLAIM_DIRECT';
-                  return (
-                    <div key={tx.id} className="flex items-center justify-between p-3.5 bg-zinc-950/40 rounded-xl border border-zinc-800/30 hover:border-zinc-800/60 transition-all">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-white">{tx.type}</div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5 truncate">{tx.description} • {new Date(tx.timestamp).toLocaleString()}</div>
-                      </div>
-                      <span className={`text-xs font-black font-mono ml-3 flex-shrink-0 ${isReceived ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {isReceived ? '+' : '-'}{isReceived ? tx.netAmount?.toFixed(2) : tx.amount?.toFixed(2)} ARES
-                      </span>
-                    </div>
-                  );
-                })
+                <AnimatePresence>
+                  {transactions.map((tx, idx) => {
+                    const isReceived = tx.type === 'DEPOSIT' || tx.type === 'TRANSFER_IN' || tx.type === 'CLAIM_DIRECT';
+                    return (
+                      <motion.div
+                        key={tx.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="flex items-center justify-between p-3.5 bg-zinc-950/40 rounded-xl border border-zinc-800/30 hover:border-zinc-800/60 transition-all"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold text-white">{tx.type}</div>
+                          <div className="text-[10px] text-zinc-500 mt-0.5 truncate">{tx.description} • {new Date(tx.timestamp).toLocaleString()}</div>
+                        </div>
+                        <span className={`text-xs font-black font-mono ml-3 flex-shrink-0 ${isReceived ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {isReceived ? '+' : '-'}{isReceived ? tx.netAmount?.toFixed(2) : tx.amount?.toFixed(2)} ARES
+                        </span>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
               )}
             </div>
           </div>

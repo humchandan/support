@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useWeb3 } from '../hooks/useWeb3';
 
+import { BentoGrid, BentoGridItem } from './ui/bento-grid';
+import { HoverEffect } from './ui/card-hover-effect';
+
 interface Earning {
   id: number;
   fromAddress: string;
@@ -112,90 +115,101 @@ export default function NetworksTab() {
       )}
 
       {/* ── Top Stats Grid ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-
+      <BentoGrid className="grid-cols-1 sm:grid-cols-3 mb-4 sm:mb-6 max-w-none">
+        
         {/* Card 1 — Available Matching Earnings */}
-        <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 hover:border-zinc-700/50 transition-all flex flex-col justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">
-              Available Matching Earnings
-            </p>
-            <div className="text-2xl font-black text-white">
-              {stats.availableEarned.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+        <BentoGridItem
+          className="flex flex-col justify-between"
+          header={<p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Available Matching Earnings</p>}
+          title={
+            <div>
+              <div className="text-2xl font-black text-white">
+                {stats.availableEarned.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </div>
+              <p className="text-xs text-zinc-500 font-mono mt-1">ARES</p>
             </div>
-            <p className="text-xs text-zinc-500 font-mono mt-1">ARES</p>
-            <p className="text-xs text-zinc-500 mt-3 leading-relaxed">
-              Earned when downlines claimed their yield. Direct-to-wallet transfer.
-            </p>
-          </div>
-          <button
-            onClick={handleRedeem}
-            disabled={redeemLoading || stats.availableEarned <= 0}
-            className="mt-6 w-full py-3.5 bg-white text-black font-bold rounded-xl text-sm hover:bg-zinc-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {redeemLoading ? (
-              <>
-                <i className="fa-solid fa-circle-notch fa-spin" /> Redeeming...
-              </>
-            ) : (
-              <>
-                <i className="fa-solid fa-download" /> Redeem to MetaMask
-              </>
-            )}
-          </button>
-        </div>
+          }
+          description={
+            <div>
+              <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
+                Earned when downlines claimed their yield. Direct-to-wallet transfer.
+              </p>
+              <button
+                onClick={handleRedeem}
+                disabled={redeemLoading || stats.availableEarned <= 0}
+                className="mt-4 w-full py-2.5 bg-white text-black font-bold rounded-xl text-sm hover:bg-zinc-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {redeemLoading ? (
+                  <><i className="fa-solid fa-circle-notch fa-spin" /> Redeeming...</>
+                ) : (
+                  <><i className="fa-solid fa-download" /> Redeem</>
+                )}
+              </button>
+            </div>
+          }
+        />
 
         {/* Card 2 — Total Earned (Lifetime) */}
-        <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 hover:border-zinc-700/50 transition-all flex flex-col justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">
-              Total Earned (Lifetime)
-            </p>
-            <div className="text-2xl font-black text-emerald-400">
-              {stats.totalEarned.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+        <BentoGridItem
+          className="flex flex-col justify-between"
+          header={<p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Total Earned (Lifetime)</p>}
+          title={
+            <div>
+              <div className="text-2xl font-black text-emerald-400">
+                {stats.totalEarned.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </div>
+              <p className="text-xs text-zinc-500 font-mono mt-1">ARES</p>
             </div>
-            <p className="text-xs text-zinc-500 font-mono mt-1">ARES</p>
-            <p className="text-xs text-zinc-500 mt-3 leading-relaxed">
-              Total network-based commission accrued from your downline tree.
-            </p>
-          </div>
-          <span className="mt-6 self-start text-[11px] text-zinc-500 font-mono bg-zinc-950/60 border border-zinc-800/40 px-3 py-1 rounded-full">
-            Directly from downlines
-          </span>
-        </div>
+          }
+          description={
+            <div>
+              <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
+                Total network-based commission accrued from your downline tree.
+              </p>
+              <span className="mt-4 inline-block text-[11px] text-zinc-500 font-mono bg-zinc-950/60 border border-zinc-800/40 px-3 py-1 rounded-full">
+                Directly from downlines
+              </span>
+            </div>
+          }
+        />
 
         {/* Card 3 — Total Redeemed */}
-        <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 hover:border-zinc-700/50 transition-all flex flex-col justify-between">
-          <div>
-            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">
-              Total Redeemed
-            </p>
-            <div className="text-2xl font-black text-zinc-400">
-              {stats.claimedEarned.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+        <BentoGridItem
+          className="flex flex-col justify-between"
+          header={<p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Total Redeemed</p>}
+          title={
+            <div>
+              <div className="text-2xl font-black text-zinc-400">
+                {stats.claimedEarned.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </div>
+              <p className="text-xs text-zinc-500 font-mono mt-1">ARES</p>
             </div>
-            <p className="text-xs text-zinc-500 font-mono mt-1">ARES</p>
-            <p className="text-xs text-zinc-500 mt-3 leading-relaxed">
-              Matching commissions successfully withdrawn to your primary wallet.
-            </p>
-          </div>
-          <span className="mt-6 self-start text-[11px] text-zinc-500 font-mono bg-zinc-950/60 border border-zinc-800/40 px-3 py-1 rounded-full">
-            Transaction fees: 0%
-          </span>
-        </div>
+          }
+          description={
+            <div>
+              <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
+                Matching commissions successfully withdrawn to your primary wallet.
+              </p>
+              <span className="mt-4 inline-block text-[11px] text-zinc-500 font-mono bg-zinc-950/60 border border-zinc-800/40 px-3 py-1 rounded-full">
+                Transaction fees: 0%
+              </span>
+            </div>
+          }
+        />
 
-      </div>
+      </BentoGrid>
 
       {/* ── Earnings History Card ── */}
-      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8">
+      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8">
 
         {/* Header row */}
         <div className="flex items-start justify-between mb-6">
@@ -222,140 +236,61 @@ export default function NetworksTab() {
 
         <div className="h-px bg-zinc-800/60 mb-6" />
 
-        {/* ── Desktop Table ── */}
-        <div className="hidden md:block overflow-hidden rounded-xl border border-zinc-800/40">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-zinc-950/60 border-b border-zinc-800/40">
-                {['From Downline', 'Tree Depth', 'Matching Yield', 'Status', 'Timestamp', 'On-chain Hash'].map(
-                  (h, i) => (
-                    <th
-                      key={h}
-                      className={`px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide ${
-                        i === 5 ? 'text-right' : 'text-left'
-                      }`}
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800/30">
-              {earnings.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-4 py-10 text-center text-zinc-600 text-sm"
-                  >
-                    No matching commissions generated yet. When your downline claims yield, it will appear here.
-                  </td>
-                </tr>
-              ) : (
-                earnings.map((e) => (
-                  <tr key={e.id} className="hover:bg-zinc-800/20 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-blue-400">
-                      {e.fromAddress.substring(0, 6)}…{e.fromAddress.substring(38)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="bg-zinc-950/60 text-zinc-400 text-[10px] font-bold px-2 py-0.5 rounded border border-zinc-800/40">
-                        Level {e.level}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-bold text-white">
-                      +{e.amount.toFixed(4)} ARES
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          e.isClaimed
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                            : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                        }`}
-                      >
+        <div className="w-full mt-2">
+          {earnings.length === 0 ? (
+            <div className="py-10 text-center text-zinc-600 text-sm border border-zinc-800/40 rounded-xl mt-4">
+              No matching commissions generated yet. When your downline claims yield, it will appear here.
+            </div>
+          ) : (
+            <HoverEffect className="py-2" items={earnings.map((e) => {
+              const abbrFrom = `${e.fromAddress.substring(0, 6)}...${e.fromAddress.substring(38)}`;
+              return {
+                title: `+${e.amount.toFixed(4)} ARES`,
+                description: new Date(e.timestamp).toLocaleString(),
+                content: (
+                  <div className="flex flex-col gap-2 relative z-50">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="bg-zinc-900 text-zinc-400 text-[10px] font-bold px-2 py-0.5 rounded border border-zinc-800/40 mr-2">
+                          Level {e.level}
+                        </span>
+                        <span className="font-bold text-white text-base">+{e.amount.toFixed(4)} ARES</span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        e.isClaimed
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                      }`}>
                         {e.isClaimed ? 'Redeemed' : 'Unclaimed'}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-zinc-500">
+                    </div>
+                    
+                    <div className="text-xs text-zinc-500 mt-2">
+                      <span className="text-zinc-600 font-semibold">From: </span>
+                      <span className="font-mono text-blue-400">{abbrFrom}</span>
+                    </div>
+                    <div className="text-xs text-zinc-500">
+                      <span className="text-zinc-600 font-semibold">Date: </span>
                       {new Date(e.timestamp).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {e.txHash ? (
+                    </div>
+                    
+                    {e.txHash && (
+                      <div className="pt-2 border-t border-zinc-800/40 mt-2">
+                        <span className="text-zinc-600 font-semibold text-[11px]">Tx: </span>
                         <a
                           href="http://localhost"
                           target="_blank"
                           rel="noreferrer"
-                          className="font-mono text-xs text-blue-400 hover:text-blue-300 hover:underline transition-colors"
+                          className="font-mono text-[11px] text-blue-400 hover:text-blue-300 hover:underline transition-colors"
                         >
                           {e.txHash.substring(0, 6)}…{e.txHash.substring(60)}
                         </a>
-                      ) : (
-                        <span className="text-zinc-700 italic text-xs">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* ── Mobile Cards ── */}
-        <div className="block md:hidden space-y-3">
-          {earnings.length === 0 ? (
-            <div className="py-10 text-center text-zinc-600 text-sm">
-              No matching commissions generated yet.
-            </div>
-          ) : (
-            earnings.map((e) => (
-              <div
-                key={e.id}
-                className="bg-zinc-950/60 border border-zinc-800/40 rounded-xl p-4 space-y-3"
-              >
-                {/* Top row: level badge + amount + status */}
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="bg-zinc-900 text-zinc-400 text-[10px] font-bold px-2 py-0.5 rounded border border-zinc-800/40">
-                      Level {e.level}
-                    </span>
-                    <p className="font-bold text-white text-sm mt-1.5">
-                      +{e.amount.toFixed(4)} ARES
-                    </p>
+                      </div>
+                    )}
                   </div>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      e.isClaimed
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                    }`}
-                  >
-                    {e.isClaimed ? 'Redeemed' : 'Unclaimed'}
-                  </span>
-                </div>
-
-                {/* Meta details */}
-                <div className="text-xs text-zinc-500 space-y-1.5">
-                  <div>
-                    <span className="text-zinc-600 font-semibold">From Downline: </span>
-                    <span className="font-mono text-blue-400">
-                      {e.fromAddress.substring(0, 6)}…{e.fromAddress.substring(38)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-600 font-semibold">Timestamp: </span>
-                    {new Date(e.timestamp).toLocaleString()}
-                  </div>
-                  {e.txHash && (
-                    <div className="pt-2 border-t border-zinc-800/40 mt-2">
-                      <span className="text-zinc-600 font-semibold">Redeem Hash: </span>
-                      <span className="font-mono text-blue-400 break-all text-[11px]">
-                        {e.txHash}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))
+                )
+              }
+            })} />
           )}
         </div>
 

@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useWeb3 } from '../hooks/useWeb3';
 import { ethers } from 'ethers';
 import { waitForTransactionReceiptWithRetry } from '../lib/txWaiter';
+import { BackgroundGradient } from './ui/background-gradient';
+import { HoverEffect } from './ui/card-hover-effect';
 
 const MLM_TIERS = [
   { name: "Default", minSelfInvestment: 100, minDirects: 0, minTeamVolume: 0, unlockedLevels: [1] },
@@ -29,12 +31,12 @@ const MLM_LEVELS = [
 
 const getFriendlyErrorMessage = (err) => {
   if (!err) return "Transaction failed.";
-  
+
   const msg = (err.message || err.reason || "").toLowerCase();
   if (
-    msg.includes("user rejected") || 
-    msg.includes("user denied") || 
-    err.code === "ACTION_REJECTED" || 
+    msg.includes("user rejected") ||
+    msg.includes("user denied") ||
+    err.code === "ACTION_REJECTED" ||
     err.code === 4001
   ) {
     return "Transaction was cancelled / rejected in wallet.";
@@ -42,8 +44,8 @@ const getFriendlyErrorMessage = (err) => {
 
   // Handle gas estimation or call exceptions due to insufficient balance/gas
   if (
-    msg.includes("estimategas") || 
-    msg.includes("missing revert data") || 
+    msg.includes("estimategas") ||
+    msg.includes("missing revert data") ||
     msg.includes("insufficient funds") ||
     err.code === "CALL_EXCEPTION"
   ) {
@@ -251,11 +253,11 @@ export default function WealthTab() {
       const portalContract = new ethers.Contract(supportData.address, supportData.abi, signer);
 
       const valueWei = ethers.parseEther(val.toString());
-      const tx = await portalContract.purchasePlan({ 
+      const tx = await portalContract.purchasePlan({
         value: valueWei,
         gasPrice: ethers.parseUnits("1.5", "gwei")
       });
-      
+
       showToast("Transaction submitted, waiting for confirmation...", false);
       const receipt = await waitForTransactionReceiptWithRetry(signer.provider || provider, tx.hash);
 
@@ -706,29 +708,28 @@ export default function WealthTab() {
     <div id="tab-wealth" className="space-y-6">
 
       {/* ── TWO-COLUMN LAYOUT ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-4 sm:gap-6">
 
         {/* ── LEFT COLUMN ── */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-6">
 
           {/* Buy Validation Plan */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8 relative overflow-hidden hover:border-zinc-700/50 transition-all duration-300 group">
+          <BackgroundGradient containerClassName="w-full" className="bg-zinc-900 border border-zinc-800 rounded-[22px] p-4 sm:p-6 md:p-8 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/[0.03] rounded-full blur-3xl pointer-events-none" />
             <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Investment</div>
             <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Buy Validation Plan</h2>
             <p className="text-sm text-zinc-400 mb-6 leading-relaxed">Deposit native ARES to buy a support plan. Earn 8.5% monthly yield and unlock MLM matching commissions.</p>
 
             {/* Preset buttons */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
               {[1000, 5000, 10000].map(preset => (
                 <button
                   key={preset}
                   onClick={() => { setPurchaseAmount(preset); setActivePreset(preset); }}
-                  className={`py-3 rounded-xl text-sm font-bold border transition-all duration-200 ${
-                    activePreset === preset
+                  className={`py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-bold border transition-all duration-200 ${activePreset === preset
                       ? 'bg-white text-black border-white shadow-lg shadow-white/10'
                       : 'bg-zinc-950/60 text-zinc-300 border-zinc-800/60 hover:bg-zinc-800/60 hover:text-white hover:border-zinc-700/60'
-                  }`}
+                    }`}
                 >
                   {preset.toLocaleString()} ARES
                 </button>
@@ -761,58 +762,45 @@ export default function WealthTab() {
             >
               {txLoading ? <><i className="fa-solid fa-spinner fa-spin text-sm" /> Processing...</> : '⚡ Buy Validation Plan'}
             </button>
-          </div>
+          </BackgroundGradient>
 
           {/* Staking Investment History */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
+          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
             <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">History</div>
             <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Staking Investment History</h2>
             <p className="text-sm text-zinc-400 mb-6 leading-relaxed">Track all your active validation plan purchases with blockchain verified timestamps.</p>
 
-            <div className="overflow-hidden rounded-xl border border-zinc-800/40">
-              <div className="overflow-y-auto max-h-48">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-zinc-950/60 border-b border-zinc-800/40">
-                      <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Date & Time</th>
-                      <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Plan Size</th>
-                      <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Tx Hash</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/30">
-                    {!userProfile?.stakingPlans || userProfile.stakingPlans.length === 0 ? (
-                      <tr>
-                        <td colSpan={3} className="px-4 py-8 text-center text-zinc-600 text-sm">No plans purchased yet.</td>
-                      </tr>
-                    ) : (
-                      userProfile.stakingPlans.map((plan, index) => {
-                        const abbrHash = `${plan.txHash.substring(0, 6)}...${plan.txHash.substring(plan.txHash.length - 4)}`;
-                        return (
-                          <tr key={index} className="hover:bg-zinc-800/20 transition-colors">
-                            <td className="px-4 py-3 text-zinc-300 text-xs">{new Date(plan.timestamp).toLocaleString()}</td>
-                            <td className="px-4 py-3 font-bold text-white text-xs">{plan.amount.toLocaleString()} ARES</td>
-                            <td className="px-4 py-3">
-                              <a
-                                href={`http://localhost:9081/tx/${plan.txHash}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-mono text-cyan-400 hover:text-cyan-300 text-xs transition-colors"
-                              >
-                                {abbrHash}
-                              </a>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            <div className="w-full mt-2">
+              {!userProfile?.stakingPlans || userProfile.stakingPlans.length === 0 ? (
+                <div className="px-4 py-8 text-center text-zinc-600 text-sm border border-zinc-800/40 rounded-xl mt-4">No plans purchased yet.</div>
+              ) : (
+                <HoverEffect className="py-2" items={userProfile.stakingPlans.map((plan, index) => {
+                  const abbrHash = `${plan.txHash.substring(0, 6)}...${plan.txHash.substring(plan.txHash.length - 4)}`;
+                  return {
+                    title: `${plan.amount.toLocaleString()} ARES`,
+                    description: new Date(plan.timestamp).toLocaleString(),
+                    content: (
+                      <div className="flex flex-col gap-2 relative z-50">
+                        <span className="font-bold text-white text-xl">{plan.amount.toLocaleString()} ARES</span>
+                        <span className="text-zinc-400 text-xs">{new Date(plan.timestamp).toLocaleString()}</span>
+                        <a
+                          href={`http://localhost:9081/tx/${plan.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-cyan-400 hover:text-cyan-300 text-xs transition-colors mt-2"
+                        >
+                          {abbrHash}
+                        </a>
+                      </div>
+                    )
+                  }
+                })} />
+              )}
             </div>
           </div>
 
           {/* MLM Organization & Unlocks */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
+          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
             <div className="flex items-start justify-between gap-4 mb-6">
               <div>
                 <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Organization</div>
@@ -825,9 +813,8 @@ export default function WealthTab() {
                   <button
                     key={mode}
                     onClick={() => { setMlmViewMode(mode); if (mode === 'tree') { setPanX(250); setPanY(50); setZoom(1); } }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 capitalize ${
-                      mlmViewMode === mode ? 'bg-white text-black' : 'text-zinc-500 hover:text-white'
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 capitalize ${mlmViewMode === mode ? 'bg-white text-black' : 'text-zinc-500 hover:text-white'
+                      }`}
                   >
                     {mode}
                   </button>
@@ -836,7 +823,7 @@ export default function WealthTab() {
             </div>
 
             {/* Stats row */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
               {[
                 { label: 'Active Directs', value: realDirects },
                 { label: 'Team Volume', value: `${realTeamVolume.toLocaleString()} ARES` },
@@ -853,39 +840,41 @@ export default function WealthTab() {
               <div>
                 <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Matching Bonus Tiers — 10 Levels</div>
                 <div className="overflow-hidden rounded-xl border border-zinc-800/40">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-zinc-950/60 border-b border-zinc-800/40">
-                        <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Level</th>
-                        <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Bonus</th>
-                        <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Required Rank</th>
-                        <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-800/30">
-                      {dbLevels.map((lvl, idx) => {
-                        const isUnlocked = hasUnlockedLevel(realRank, lvl.level);
-                        return (
-                          <tr key={idx} className="hover:bg-zinc-800/20 transition-colors">
-                            <td className="px-4 py-3 font-bold text-white text-xs">Level {lvl.level}</td>
-                            <td className="px-4 py-3 text-zinc-300 text-xs font-mono">{Number(lvl.bonus).toFixed(2)}%</td>
-                            <td className="px-4 py-3 text-zinc-400 text-xs">{lvl.requiredRank}</td>
-                            <td className="px-4 py-3">
-                              {isUnlocked ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded-full">
-                                  <i className="fa-solid fa-lock-open text-[9px]" /> Unlocked
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-500 bg-zinc-800/40 px-2 py-0.5 rounded-full">
-                                  <i className="fa-solid fa-lock text-[9px]" /> Locked
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-zinc-950/60 border-b border-zinc-800/40">
+                          <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Level</th>
+                          <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Bonus</th>
+                          <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Required Rank</th>
+                          <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800/30">
+                        {dbLevels.map((lvl, idx) => {
+                          const isUnlocked = hasUnlockedLevel(realRank, lvl.level);
+                          return (
+                            <tr key={idx} className="hover:bg-zinc-800/20 transition-colors">
+                              <td className="px-4 py-3 font-bold text-white text-xs">Level {lvl.level}</td>
+                              <td className="px-4 py-3 text-zinc-300 text-xs font-mono">{Number(lvl.bonus).toFixed(2)}%</td>
+                              <td className="px-4 py-3 text-zinc-400 text-xs">{lvl.requiredRank}</td>
+                              <td className="px-4 py-3">
+                                {isUnlocked ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                                    <i className="fa-solid fa-lock-open text-[9px]" /> Unlocked
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-500 bg-zinc-800/40 px-2 py-0.5 rounded-full">
+                                    <i className="fa-solid fa-lock text-[9px]" /> Locked
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -1032,7 +1021,7 @@ export default function WealthTab() {
           </div>
 
           {/* Referral Center */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
+          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
             <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Referrals</div>
             <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Referral Center & Downlines Directory</h2>
             <p className="text-sm text-zinc-400 mb-6 leading-relaxed">Share your personal referral link to invite partners and earn 10 levels of matching yield commissions.</p>
@@ -1074,56 +1063,47 @@ export default function WealthTab() {
               />
             </div>
 
-            {/* Partners table */}
-            <div className="overflow-hidden rounded-xl border border-zinc-800/40">
-              <div className="overflow-y-auto max-h-60">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-zinc-950/60 border-b border-zinc-800/40">
-                      <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Name / Mobile</th>
-                      <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide hidden sm:table-cell">Wallet</th>
-                      <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Self Staking</th>
-                      <th className="text-left px-4 py-3 text-[10px] font-bold text-zinc-500 uppercase tracking-wide hidden md:table-cell">Team Vol.</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800/30">
-                    {filteredDownlines.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="px-4 py-8 text-center text-zinc-600 text-sm">No matching partners found.</td>
-                      </tr>
-                    ) : (
-                      filteredDownlines.map((d, index) => {
-                        const abbr = `${d.walletAddress.substring(0, 6)}...${d.walletAddress.substring(d.walletAddress.length - 4)}`;
-                        return (
-                          <tr
-                            key={index}
-                            className="hover:bg-zinc-800/20 transition-colors cursor-pointer"
-                            onClick={() => handleInspectPartner(d.walletAddress)}
-                          >
-                            <td className="px-4 py-3">
-                              <div className="font-semibold text-white text-xs leading-tight">{d.name}</div>
-                              <div className="text-[10px] text-zinc-500 mt-0.5">{d.mobile}</div>
-                            </td>
-                            <td className="px-4 py-3 font-mono text-zinc-400 text-xs hidden sm:table-cell">{abbr}</td>
-                            <td className="px-4 py-3 font-bold text-white text-xs">{d.selfInvestment.toLocaleString()} ARES</td>
-                            <td className="px-4 py-3 text-zinc-400 text-xs hidden md:table-cell">{d.teamVolume.toLocaleString()}</td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            <div className="w-full mt-2">
+              {filteredDownlines.length === 0 ? (
+                <div className="px-4 py-8 text-center text-zinc-600 text-sm border border-zinc-800/40 rounded-xl mt-4">No matching partners found.</div>
+              ) : (
+                <HoverEffect className="py-2 grid-cols-1 md:grid-cols-2 lg:grid-cols-2" items={filteredDownlines.map((d, index) => {
+                  const abbr = `${d.walletAddress.substring(0, 6)}...${d.walletAddress.substring(d.walletAddress.length - 4)}`;
+                  return {
+                    title: d.name,
+                    description: d.mobile,
+                    content: (
+                      <div className="flex flex-col gap-2 relative z-50 cursor-pointer" onClick={() => handleInspectPartner(d.walletAddress)}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-white text-base">{d.name}</span>
+                          <span className="font-mono text-zinc-500 text-[10px]">{abbr}</span>
+                        </div>
+                        <span className="text-zinc-400 text-xs">{d.mobile}</span>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          <div className="bg-zinc-900/50 rounded-lg p-2">
+                            <div className="text-[9px] text-zinc-500 uppercase">Self Staking</div>
+                            <div className="font-bold text-white text-xs">{d.selfInvestment.toLocaleString()} ARES</div>
+                          </div>
+                          <div className="bg-zinc-900/50 rounded-lg p-2">
+                            <div className="text-[9px] text-zinc-500 uppercase">Team Vol</div>
+                            <div className="font-bold text-white text-xs">{d.teamVolume.toLocaleString()} ARES</div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
+                })} />
+              )}
             </div>
           </div>
 
         </div>
 
         {/* ── RIGHT COLUMN ── */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-6">
 
           {/* Payout Limit Status */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
+          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
             <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Payout Cap</div>
             <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Payout Limit Status</h2>
             <p className="text-sm text-zinc-400 mb-6 leading-relaxed">All yields and MLM matching commissions count towards your hard 250% payout limit.</p>
@@ -1138,9 +1118,8 @@ export default function WealthTab() {
               </div>
               <div className="h-2 bg-zinc-800/60 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    realFillPct >= 100 ? 'bg-red-500' : realFillPct > 80 ? 'bg-amber-500' : 'bg-gradient-to-r from-cyan-500 to-blue-500'
-                  }`}
+                  className={`h-full rounded-full transition-all duration-500 ${realFillPct >= 100 ? 'bg-red-500' : realFillPct > 80 ? 'bg-amber-500' : 'bg-gradient-to-r from-cyan-500 to-blue-500'
+                    }`}
                   style={{ width: `${realFillPct}%` }}
                 />
               </div>
@@ -1174,7 +1153,7 @@ export default function WealthTab() {
           </div>
 
           {/* Withdrawal Center */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
+          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
             <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Withdrawals</div>
             <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Withdrawal Center</h2>
             <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
@@ -1192,9 +1171,8 @@ export default function WealthTab() {
                 <button
                   key={opt.key}
                   onClick={() => setWithdrawalType(opt.key)}
-                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${
-                    withdrawalType === opt.key ? 'bg-white text-black shadow-md' : 'text-zinc-500 hover:text-white'
-                  }`}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${withdrawalType === opt.key ? 'bg-white text-black shadow-md' : 'text-zinc-500 hover:text-white'
+                    }`}
                 >
                   {opt.label}
                 </button>
@@ -1211,11 +1189,10 @@ export default function WealthTab() {
             </div>
 
             {/* Info banner */}
-            <div className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border mb-5 text-xs ${
-              withdrawalType === 'metamask'
+            <div className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border mb-5 text-xs ${withdrawalType === 'metamask'
                 ? 'bg-cyan-950/30 border-cyan-900/40 text-cyan-400'
                 : 'bg-emerald-950/30 border-emerald-900/40 text-emerald-400'
-            }`}>
+              }`}>
               <i className="fa-solid fa-circle-info flex-shrink-0 mt-0.5" />
               <span>
                 {withdrawalType === 'metamask'
@@ -1265,14 +1242,14 @@ export default function WealthTab() {
       </div>
 
       {/* ── PROJECTIONS CENTER (Full-width below) ── */}
-      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
+      <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
         <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Simulator</div>
         <h2 className="text-xl font-bold text-white tracking-tight mb-1.5 flex items-center gap-2">
           <span className="text-cyan-400">⚗</span> Projections & Simulation Center
         </h2>
         <p className="text-sm text-zinc-400 mb-8 leading-relaxed">Simulate different staking amounts, direct sponsor size, and team business volume to see simulated rank, unlocked levels, and earnings cap crossover projections.</p>
 
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
 
           {/* Controls */}
           <div className="space-y-6">
@@ -1306,7 +1283,7 @@ export default function WealthTab() {
           {/* Results */}
           <div className="space-y-5">
             {/* Sim stats */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
               {[
                 { label: 'Simulated Rank', value: simRank.name, color: 'text-cyan-400' },
                 { label: 'Unlock Ratio', value: `${getUnlockedLevelsCount(simRank)} / 10`, color: 'text-emerald-400' },
@@ -1320,7 +1297,7 @@ export default function WealthTab() {
             </div>
 
             {/* Monthly breakdown */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
               {[
                 { label: 'Monthly Yield', value: `${simMonthlyYield.toFixed(2)}`, color: 'text-white' },
                 { label: 'Monthly Matching', value: `${simMonthlyMatching.toFixed(2)}`, color: 'text-white' },
@@ -1390,11 +1367,10 @@ export default function WealthTab() {
 
       {/* ── TOAST ── */}
       {toast.show && (
-        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-2xl backdrop-blur-xl text-sm font-semibold transition-all ${
-          toast.isError
+        <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-2xl backdrop-blur-xl text-sm font-semibold transition-all ${toast.isError
             ? 'bg-red-950/90 border-red-800/60 text-red-200'
             : 'bg-emerald-950/90 border-emerald-800/60 text-emerald-200'
-        }`}>
+          }`}>
           <i className={`fa-solid ${toast.isError ? 'fa-circle-exclamation' : 'fa-circle-check'} text-sm`} />
           <span>{toast.message}</span>
         </div>

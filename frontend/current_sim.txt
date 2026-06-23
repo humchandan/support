@@ -1,0 +1,96 @@
+      {/* ── PROJECTIONS CENTER (Full-width below) ── */}
+      <div className="relative group p-[1px] rounded-2xl bg-gradient-to-b from-white/10 to-white/[0.02] overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-bl from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+        <div className="bg-black/40 backdrop-blur-2xl rounded-2xl p-4 sm:p-6 md:p-8 relative z-10">
+          <div className="absolute top-0 right-1/4 w-64 h-64 bg-cyan-500/10 blur-3xl pointer-events-none rounded-full" />
+          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">Simulator</div>
+          <h2 className="text-3xl font-black text-white tracking-tight mb-2 flex items-center gap-3 drop-shadow-md">
+            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(34,211,238,0.4)]">⚗</span>
+            Projections & Simulation Center
+          </h2>
+          <p className="text-sm text-zinc-400 mb-10 leading-relaxed max-w-2xl">Simulate different staking amounts, direct sponsor size, and team business volume to see simulated rank, unlocked levels, and earnings cap crossover projections in real-time.</p>
+
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_1.2fr] gap-8 xl:gap-12">
+
+            {/* Controls */}
+            <div className="space-y-8 bg-white/[0.02] border border-white/5 rounded-2xl p-6 shadow-inner">
+              {[
+                { label: 'Simulated Self-Staking', value: `${simStaking.toLocaleString()} ARES`, min: 100, max: 100000, step: 100, state: simStaking, setter: setSimStaking, marks: ['100', '25K', '50K', '100K'] },
+                { label: 'Simulated Direct Recruits', value: `${simDirects} ${simDirects === 1 ? 'Partner' : 'Partners'}`, min: 0, max: 12, step: 1, state: simDirects, setter: setSimDirects, marks: ['0', '4', '8', '12'] },
+                { label: 'Simulated Team Volume', value: `${simTeamVolume.toLocaleString()} ARES`, min: 0, max: 1200000, step: 10000, state: simTeamVolume, setter: setSimTeamVolume, marks: ['0', '150K', '500K', '1.2M'] },
+                { label: 'Simulated Downline Yield', value: `${simDownlineYield.toLocaleString()} ARES`, min: 0, max: 100000, step: 1000, state: simDownlineYield, setter: setSimDownlineYield, marks: ['0', '25K', '50K', '100K'] },
+              ].map((slider, i) => (
+                <div key={i}>
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="text-xs font-bold text-zinc-300 uppercase tracking-wide">{slider.label}</label>
+                    <span className="text-sm font-black text-cyan-400 font-mono drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20">{slider.value}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={slider.min}
+                    max={slider.max}
+                    step={slider.step}
+                    value={slider.state}
+                    onChange={(e) => slider.setter(parseInt(e.target.value))}
+                    className="w-full h-2 bg-black/60 rounded-full appearance-none cursor-pointer accent-cyan-400 border border-white/10 shadow-inner"
+                  />
+                  <div className="flex justify-between text-[10px] text-zinc-500 font-bold tracking-widest mt-2 uppercase">
+                    {slider.marks.map(m => <span key={m}>{m}</span>)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Results */}
+            <div className="space-y-6">
+              {/* Sim stats */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { label: 'Simulated Rank', value: simRank.name, color: 'text-cyan-400', icon: '🏆' },
+                  { label: 'Unlock Ratio', value: `${getUnlockedLevelsCount(simRank)} / 10`, color: 'text-emerald-400', icon: '🔓' },
+                  { label: 'Months to Cap', value: simMonthlyTotal > 0 ? `${simMonthsToCap.toFixed(1)}mo` : '∞', color: 'text-amber-400', icon: '⏳' },
+                ].map((stat, i) => (
+                  <div key={i} className="bg-black/40 rounded-2xl p-5 border border-white/5 shadow-inner flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="text-2xl mb-2 opacity-80">{stat.icon}</div>
+                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">{stat.label}</div>
+                    <div className={`text-xl font-black ${stat.color} leading-tight drop-shadow-md`}>{stat.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Monthly breakdown */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  { label: 'Monthly Yield', value: `${simMonthlyYield.toFixed(2)}`, color: 'text-white' },
+                  { label: 'Monthly Matching', value: `${simMonthlyMatching.toFixed(2)}`, color: 'text-white' },
+                  { label: '2.5x Cap Limit', value: `${simMaxCap.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: 'text-red-400' },
+                ].map((stat, i) => (
+                  <div key={i} className="bg-black/40 rounded-2xl p-4 border border-white/5 shadow-inner text-center">
+                    <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-1.5">{stat.label}</div>
+                    <div className={`text-lg font-black ${stat.color} font-mono`}>{stat.value}</div>
+                    <div className="text-[9px] font-bold tracking-widest uppercase text-zinc-600 mt-0.5">ARES</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Canvas projection */}
+              <div className="bg-black/40 border border-white/5 rounded-2xl p-5 shadow-inner relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-500/5 to-transparent pointer-events-none" />
+                <div className="flex items-center justify-between mb-4 relative z-10">
+                  <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">12-Month Accumulation Projection</div>
+                  <div className="flex gap-3">
+                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-zinc-400 uppercase"><span className="w-2 h-2 rounded-full bg-[#1970ff]" /> Total Earnings</div>
+                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-zinc-400 uppercase"><span className="w-2 h-2 rounded-full border border-dashed border-[#ff453a]" /> 250% Cap</div>
+                  </div>
+                <div className="w-full h-[220px] relative z-10">
+                  <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {/* ── PARTNER INSPECTOR MODAL ── */}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useWeb3 } from '../hooks/useWeb3';
+import { BackgroundGradient } from './ui/background-gradient';
 
 export default function ProfileTab() {
   const { userAddress, jwtToken, userProfile, loadProfile } = useWeb3();
@@ -165,10 +166,10 @@ export default function ProfileTab() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-4 sm:gap-6">
 
         {/* LEFT: Profile Form */}
-        <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8 relative overflow-hidden hover:border-zinc-700/50 transition-all duration-300">
+        <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 relative overflow-hidden hover:border-zinc-700/50 transition-all duration-300">
           {isLocked && (
             <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold uppercase tracking-wider py-1 px-4 rounded-bl-xl">
               Locked
@@ -251,7 +252,7 @@ export default function ProfileTab() {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               {[
                 { label: 'City', id: 'p-city', value: city, setter: setCity, placeholder: 'City' },
                 { label: 'State', id: 'p-state', value: state, setter: setState, placeholder: 'State' },
@@ -285,10 +286,10 @@ export default function ProfileTab() {
         </div>
 
         {/* RIGHT: Rank + Documents */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-6">
 
           {/* Rank Card */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 hover:border-zinc-700/50 transition-all duration-300">
+          <BackgroundGradient className="bg-zinc-900 border border-zinc-800 rounded-[22px] p-4 sm:p-6 relative overflow-hidden w-full h-full">
             <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">MLM Status</div>
             <div className="flex items-center justify-between">
               <div>
@@ -299,10 +300,10 @@ export default function ProfileTab() {
                 <i className="fa-solid fa-award text-blue-400 text-2xl" />
               </div>
             </div>
-          </div>
+          </BackgroundGradient>
 
           {/* Identity Documents */}
-          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
+          <div className="bg-zinc-900/50 border border-zinc-800/60 rounded-2xl p-4 sm:p-6 md:p-8 hover:border-zinc-700/50 transition-all duration-300">
             <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">KYC</div>
             <h2 className="text-xl font-bold text-white tracking-tight mb-1.5">Identity Documents</h2>
             <p className="text-sm text-zinc-400 mb-6 leading-relaxed">Upload high-quality scans of your KYC credentials.</p>
