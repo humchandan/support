@@ -242,14 +242,14 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         throw new Error(`Provider for ${walletId} not available.`);
       }
 
-      // 1. Request account connection
+      // 1. Ensure we are on the Aries Chain FIRST (prevents mobile wallet injection blocking)
+      await switchOrAddNetwork(rawProvider);
+
+      // 2. Request account connection
       const accounts = await rawProvider.request({ method: 'eth_requestAccounts' });
       if (!accounts || accounts.length === 0) {
         throw new Error('No accounts returned from wallet.');
       }
-
-      // 2. Ensure we are on the Aries Chain
-      await switchOrAddNetwork(rawProvider);
 
       const addr = accounts[0].toLowerCase();
       const web3Provider = new ethers.BrowserProvider(rawProvider);
